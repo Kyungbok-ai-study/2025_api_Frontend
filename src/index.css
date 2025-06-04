@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+@font-face {
+    font-family: 'AppleSDGothicNeoB00', sans-serif;
+    src: url('assets/fonts/applesdgothicneob00.woff2') format('woff2'),
+         url('assets/fonts/applesdgothicneob00.woff') format('woff'),
+         url('assets/fonts/applesdgothicneob00.ttf') format('truetype'),
+         url('assets/fonts/applesdgothicneob00.otf') format('opentype'),
+         url('assets/fonts/applesdgothicneob00.eot') format('embedded-opentype'),
+         url('assets/fonts/applesdgothicneob00.svg#AppleSDGothicNeoB00') format('svg');
+}
+
+@font-face {
+    font-family: 'AppleSDGothicNeoR00', sans-serif;
+    src: url('/assets/fonts/applesdgothicneor00.woff2') format('woff2'),
+         url('/assets/fonts/applesdgothicneor00.woff') format('woff'),
+         url('/assets/fonts/applesdgothicneor00.ttf') format('truetype'),
+         url('/assets/fonts/applesdgothicneor00.otf') format('opentype'),
+         url('/assets/fonts/applesdgothicneor00.eot') format('embedded-opentype'),
+         url('/assets/fonts/applesdgothicneor00.svg#AppleSDGothicNeoR00') format('svg');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: revert;
+    font-weight: revert;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: inherit;
+    background: transparent;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    outline: none;
+    background: transparent;
+    font: inherit;
+    box-sizing: border-box;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+}
+
+/* Figma 스펙에 맞는 placeholder 스타일 */
+.login-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+  font-family: 'AppleSDGothicNeoB00';
+}

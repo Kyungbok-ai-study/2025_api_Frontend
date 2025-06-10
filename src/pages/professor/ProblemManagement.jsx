@@ -1,159 +1,159 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../services/api';
+import apiClient from '../../services/api.js';
 
-const ProblemManagement = () => {
+const ProblemGeneration = () => {
   const navigate = useNavigate();
-  const [problems, setProblems] = useState([]);
-  const [parsedProblems, setParsedProblems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [parsing, setParsing] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showParsedModal, setShowParsedModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadForm, setUploadForm] = useState({
-    title: '',
-    subject: '',
-    file: null
-  });
+  const [generatedProblems, setGeneratedProblems] = useState([]);
+  const [ragContext, setRagContext] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [generationForm, setGenerationForm] = useState({
+    subject: '',
+    difficulty: 'medium',
+    questionType: 'multiple_choice',
+    count: 5,
+    keywords: '',
+    context: ''
+  });
+  const [realTimeLearning, setRealTimeLearning] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
       const user = JSON.parse(userData);
       setCurrentUser(user);
-      setUploadForm(prev => ({
+      setGenerationForm(prev => ({
         ...prev,
         subject: user.department || ''
       }));
     }
-    loadProblems();
+    loadRagContext();
+    if (realTimeLearning) {
+      startRealTimeLearning();
+    }
   }, []);
 
-  const loadProblems = async () => {
+  // RAG 컨텍스트 로드
+  const loadRagContext = async () => {
     try {
-      const response = await apiClient.get('/professor/problems');
-      setProblems(response.data.problems);
+      setLoading(true);
+      const response = await apiClient.get('/professor/rag/context');
+      if (response.data.success) {
+        setRagContext(response.data.context || []);
+      } else {
+        console.error('RAG 컨텍스트 로드 실패:', response.data.message);
+        setRagContext([]);
+      }
     } catch (error) {
-      console.error('문제 목록 로드 실패:', error);
+      console.error('RAG 컨텍스트 로드 실패:', error);
+      setRagContext([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFileUpload = async (e) => {
+  // 실시간 자동 러닝 시작
+  const startRealTimeLearning = () => {
+    console.log('🤖 실시간 자동 러닝 활성화');
+    // 실제 구현에서는 WebSocket 또는 Server-Sent Events 사용
+    setInterval(async () => {
+      try {
+        await apiClient.post('/professor/rag/auto-learning', {
+          subject: currentUser?.department,
+          timestamp: new Date().toISOString()
+        });
+        console.log('🔄 자동 러닝 업데이트 완료');
+      } catch (error) {
+        console.error('자동 러닝 오류:', error);
+      }
+    }, 300000); // 5분마다 자동 업데이트
+  };
+
+  // RAG 기반 문제 생성
+  const handleGenerateProblems = async (e) => {
     e.preventDefault();
-    if (!selectedFile) {
-      alert('파일을 선택해주세요.');
-      return;
-    }
-
-    setUploading(true);
+    setGenerating(true);
+    
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('title', uploadForm.title);
-      formData.append('subject', uploadForm.subject);
-
-      // TODO: 팀원이 개발 중인 AI 파싱 API 호출
-      // const response = await apiClient.post('/professor/problems/parse-file', formData);
+      console.log('🧠 RAG 기반 문제 생성 시작:', generationForm);
       
-      // 임시 모킹 데이터 (실제 API 연동 시 제거)
-      setTimeout(() => {
-        const mockParsedProblems = [
-          {
-            id: 'temp_1',
-            question: '다음 중 JavaScript의 데이터 타입이 아닌 것은?',
-            type: 'multiple_choice',
-            choices: ['string', 'number', 'boolean', 'float'],
-            correct_answer: 'D',
-            explanation: 'JavaScript에는 float 타입이 없습니다. 모든 숫자는 number 타입으로 처리됩니다.',
-            difficulty: 2,
-            isEditing: false
-          },
-          {
-            id: 'temp_2', 
-            question: 'React의 useState 훅의 용도를 설명하시오.',
-            type: 'essay',
-            choices: null,
-            correct_answer: 'useState는 함수형 컴포넌트에서 상태를 관리하기 위한 훅입니다.',
-            explanation: 'useState는 상태 변수와 그 변수를 업데이트하는 함수를 반환합니다.',
-            difficulty: 3,
-            isEditing: false
-          }
-        ];
-        setParsedProblems(mockParsedProblems);
-        setShowUploadModal(false);
-        setShowParsedModal(true);
-        setUploading(false);
-      }, 2000);
+      const response = await apiClient.post('/professor/problems/generate-rag', {
+        ...generationForm,
+        use_rag: true,
+        real_time_learning: realTimeLearning
+      });
 
+      if (response.data.success) {
+        setGeneratedProblems(response.data.problems);
+        setShowGenerationModal(false);
+        console.log('✅ 문제 생성 완료:', response.data.problems.length + '개');
+      } else {
+        console.error('문제 생성 실패:', response.data.message);
+        alert('문제 생성에 실패했습니다: ' + response.data.message);
+      }
     } catch (error) {
-      console.error('파일 업로드 실패:', error);
-      alert('파일 업로드에 실패했습니다.');
-      setUploading(false);
+      console.error('문제 생성 실패:', error);
+      alert('문제 생성에 실패했습니다: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setGenerating(false);
     }
   };
 
+  // 생성된 문제 수정
   const handleEditProblem = (problemId, field, value) => {
-    setParsedProblems(prev => prev.map(problem => 
+    setGeneratedProblems(prev => prev.map(problem => 
       problem.id === problemId ? { ...problem, [field]: value } : problem
     ));
   };
 
+  // 편집 모드 토글
   const toggleEditMode = (problemId) => {
-    setParsedProblems(prev => prev.map(problem => 
+    setGeneratedProblems(prev => prev.map(problem => 
       problem.id === problemId ? { ...problem, isEditing: !problem.isEditing } : problem
     ));
   };
 
-  const handleRegisterProblems = async () => {
+  // 문제 저장 (최종 등록)
+  const handleSaveProblems = async () => {
     try {
-      setParsing(true);
-      
-      // TODO: 팀원이 개발 중인 AI 등록 API 호출
-      // await apiClient.post('/professor/problems/register-batch', { problems: parsedProblems });
-      
-      // 임시 처리 (실제 API 연동 시 제거)
-      setTimeout(() => {
-        alert(`${parsedProblems.length}개의 문제가 성공적으로 등록되었습니다.`);
-        setShowParsedModal(false);
-        setParsedProblems([]);
-        loadProblems();
-        setParsing(false);
-      }, 1500);
+      const response = await apiClient.post('/professor/problems/save-generated', {
+        problems: generatedProblems,
+        metadata: {
+          generated_by: currentUser?.id,
+          generation_method: 'rag',
+          real_time_learning: realTimeLearning
+        }
+      });
 
+      if (response.data.success) {
+        alert(`✅ ${generatedProblems.length}개의 문제가 성공적으로 저장되었습니다!`);
+        setGeneratedProblems([]);
+      }
     } catch (error) {
-      console.error('문제 등록 실패:', error);
-      alert('문제 등록에 실패했습니다.');
-      setParsing(false);
+      console.error('문제 저장 실패:', error);
+      alert('문제 저장에 실패했습니다.');
     }
   };
 
+  // 난이도 배지
   const getDifficultyBadge = (difficulty) => {
-    const colors = {
-      1: 'bg-green-100 text-green-800',
-      2: 'bg-blue-100 text-blue-800', 
-      3: 'bg-yellow-100 text-yellow-800',
-      4: 'bg-orange-100 text-orange-800',
-      5: 'bg-red-100 text-red-800'
+    const config = {
+      'easy': { text: '쉬움', color: 'bg-green-100 text-green-800' },
+      'medium': { text: '보통', color: 'bg-blue-100 text-blue-800' },
+      'hard': { text: '어려움', color: 'bg-red-100 text-red-800' }
     };
-    const labels = {
-      1: '매우 쉬움',
-      2: '쉬움',
-      3: '보통', 
-      4: '어려움',
-      5: '매우 어려움'
-    };
+    const curr = config[difficulty] || config['medium'];
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[difficulty]}`}>
-        {labels[difficulty]}
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${curr.color}`}>
+        {curr.text}
       </span>
     );
   };
 
+  // 문제 유형 배지
   const getTypeBadge = (type) => {
     const typeConfig = {
       'multiple_choice': { text: '객관식', color: 'bg-blue-100 text-blue-800' },
@@ -174,7 +174,7 @@ const ProblemManagement = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">문제 목록 로딩 중...</p>
+          <p className="mt-4 text-gray-600">RAG 시스템 초기화 중...</p>
         </div>
       </div>
     );
@@ -193,330 +193,132 @@ const ProblemManagement = () => {
               >
                 ← 대시보드로 돌아가기
               </button>
-              <h1 className="text-xl font-bold text-gray-900">AI 문제 등록</h1>
+              <h1 className="text-xl font-bold text-gray-900">🧠 RAG 기반 문제 생성</h1>
             </div>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-            >
-              📄 문제 파일 업로드
-            </button>
-          </div>
-        </div>
+            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+                <span className="text-sm text-gray-600 mr-2">실시간 자동 러닝</span>
+                <button
+                  onClick={() => setRealTimeLearning(!realTimeLearning)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    realTimeLearning ? 'bg-green-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition duration-200 ease-in-out ${
+                      realTimeLearning ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+              <button
+                onClick={() => setShowGenerationModal(true)}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center"
+              >
+                🚀 문제 생성
+              </button>
+            </div>
+              </div>
+              </div>
       </header>
 
-      {/* 메인 콘텐츠 */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* 안내 메시지 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center">
-              <div className="text-blue-600 mr-3">🤖</div>
-              <div>
-                <h3 className="text-sm font-medium text-blue-900">AI 기반 문제 등록 시스템</h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  문제 파일을 업로드하면 AI가 자동으로 파싱하여 문제를 생성합니다. 
-                  파싱된 내용을 검토하고 수정한 후 등록할 수 있습니다.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 통계 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="text-sm font-medium text-gray-500">등록된 문제</div>
-                <div className="mt-1 text-2xl font-semibold text-gray-900">
-                  {problems.length}
+        {/* RAG 컨텍스트 상태 */}
+        <div className="bg-white rounded-lg shadow mb-6 p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            📚 RAG 지식 베이스 상태
+            {realTimeLearning && <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">🔄 실시간 업데이트</span>}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {ragContext.map((context) => (
+              <div key={context.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-gray-900">{context.source}</h3>
+                  <span className="text-xs text-gray-500">{context.last_updated}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {context.topics.map((topic, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      {topic}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </div>
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="text-sm font-medium text-gray-500">객관식 문제</div>
-                <div className="mt-1 text-2xl font-semibold text-blue-600">
-                  {problems.filter(p => p.problem_type === 'multiple_choice').length}
-                </div>
-              </div>
-            </div>
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="text-sm font-medium text-gray-500">서술형 문제</div>
-                <div className="mt-1 text-2xl font-semibold text-purple-600">
-                  {problems.filter(p => p.problem_type === 'essay').length}
-                </div>
-              </div>
-            </div>
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="text-sm font-medium text-gray-500">AI 학습 완료</div>
-                <div className="mt-1 text-2xl font-semibold text-green-600">
-                  {problems.reduce((sum, p) => sum + p.usage_count, 0)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 등록된 문제 목록 */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">등록된 문제 목록</h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                AI가 학습한 문제들을 카테고리별로 확인하고 관리하세요.
-              </p>
-            </div>
-            
-            {problems.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-xl mb-4">📄</div>
-                <p className="text-gray-500">등록된 문제가 없습니다.</p>
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  첫 문제 파일 업로드하기
-                </button>
-              </div>
-            ) : (
-              <ul className="divide-y divide-gray-200">
-                {problems.map((problem) => (
-                  <li key={problem.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-lg font-medium text-gray-900">{problem.title}</h4>
-                          {getTypeBadge(problem.problem_type)}
-                          {getDifficultyBadge(problem.difficulty)}
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                            AI 학습 완료
-                          </span>
-                        </div>
-                        <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
-                          <span>📚 {problem.subject}</span>
-                          <span>🎯 활용 횟수: {problem.usage_count}회</span>
-                          <span>🤖 AI 점수: 95%</span>
-                        </div>
-                        <div className="mt-1 text-xs text-gray-400">
-                          등록일: {problem.created_at}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">
-                          문제 보기
-                        </button>
-                        <button className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600">
-                          수정
-                        </button>
-                        <button className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600">
-                          AI 재학습
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            ))}
           </div>
         </div>
-      </main>
 
-      {/* 파일 업로드 모달 */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">문제 파일 업로드</h2>
+        {/* 생성된 문제 목록 */}
+        {generatedProblems.length > 0 && (
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">🎯 생성된 문제 ({generatedProblems.length}개)</h2>
               <button
-                onClick={() => setShowUploadModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={handleSaveProblems}
+                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
               >
-                ✕
+                💾 모든 문제 저장
               </button>
             </div>
-
-            <form onSubmit={handleFileUpload} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">문제집 제목</label>
-                <input
-                  type="text"
-                  required
-                  value={uploadForm.title}
-                  onChange={(e) => setUploadForm({...uploadForm, title: e.target.value})}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
-                  placeholder="예: 2024년 중간고사 문제"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">과목</label>
-                <input
-                  type="text"
-                  required
-                  value={uploadForm.subject}
-                  onChange={(e) => setUploadForm({...uploadForm, subject: e.target.value})}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
-                  placeholder={`과목명 (기본: ${currentUser?.department})`}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">문제 파일</label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500">
-                        <span>파일 선택</span>
-                        <input
-                          type="file"
-                          required
-                          className="sr-only"
-                          accept=".pdf,.doc,.docx,.txt,.hwp"
-                          onChange={(e) => setSelectedFile(e.target.files[0])}
-                        />
-                      </label>
-                      <p className="pl-1">또는 드래그 앤 드롭</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      PDF, DOC, DOCX, TXT, HWP 파일 지원
-                    </p>
-                    {selectedFile && (
-                      <p className="text-sm text-green-600 mt-2">
-                        선택된 파일: {selectedFile.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <div className="flex items-center">
-                  <div className="text-yellow-600 mr-2">⚠️</div>
-                  <div className="text-sm text-yellow-700">
-                    <p className="font-medium">주의사항</p>
-                    <ul className="mt-1 list-disc list-inside">
-                      <li>파일 업로드 후 AI가 자동으로 문제를 파싱합니다</li>
-                      <li>파싱 결과를 검토하고 수정할 수 있습니다</li>
-                      <li>최종 확인 후 AI 학습에 등록됩니다</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadModal(false)}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                >
-                  {uploading ? '업로드 중...' : '🤖 AI 파싱 시작'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 파싱 결과 모달 */}
-      {showParsedModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-6xl max-h-screen overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">AI 파싱 결과</h2>
-              <button
-                onClick={() => setShowParsedModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center">
-                <div className="text-green-600 mr-3">✅</div>
-                <div>
-                  <p className="text-sm font-medium text-green-900">
-                    파싱 완료! {parsedProblems.length}개의 문제가 발견되었습니다.
-                  </p>
-                  <p className="text-sm text-green-700">
-                    각 문제를 검토하고 필요시 수정한 후 등록해주세요.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {parsedProblems.map((problem, index) => (
-                <div key={problem.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      문제 {index + 1}
-                    </h3>
+            <div className="divide-y divide-gray-200">
+              {generatedProblems.map((problem, index) => (
+                <div key={problem.id} className="p-6">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-600">문제 {index + 1}</span>
                       {getTypeBadge(problem.type)}
                       {getDifficultyBadge(problem.difficulty)}
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                        RAG: {problem.rag_source}
+                      </span>
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                        신뢰도: {(problem.confidence_score * 100).toFixed(1)}%
+                      </span>
+                    </div>
                       <button
                         onClick={() => toggleEditMode(problem.id)}
-                        className={`px-3 py-1 rounded text-sm ${
-                          problem.isEditing 
-                            ? 'bg-green-500 text-white hover:bg-green-600' 
-                            : 'bg-gray-500 text-white hover:bg-gray-600'
-                        }`}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        {problem.isEditing ? '저장' : '수정'}
+                      {problem.isEditing ? '완료' : '수정'}
                       </button>
-                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">문제</label>
+                  {/* 문제 내용 */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">문제</label>
                       {problem.isEditing ? (
                         <textarea
                           value={problem.question}
                           onChange={(e) => handleEditProblem(problem.id, 'question', e.target.value)}
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           rows="3"
                         />
                       ) : (
-                        <p className="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md">
-                          {problem.question}
-                        </p>
+                      <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{problem.question}</p>
                       )}
                     </div>
 
+                  {/* 선택지 (객관식인 경우) */}
                     {problem.type === 'multiple_choice' && problem.choices && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">선택지</label>
-                        <div className="mt-1 space-y-2">
-                          {problem.choices.map((choice, choiceIndex) => (
-                            <div key={choiceIndex} className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-gray-600 w-6">
-                                {String.fromCharCode(65 + choiceIndex)}.
-                              </span>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">선택지</label>
+                      <div className="space-y-2">
+                        {Object.entries(problem.choices).map(([key, value]) => (
+                          <div key={key} className="flex items-center">
+                            <span className="w-8 text-sm font-medium text-gray-600">{key}.</span>
                               {problem.isEditing ? (
                                 <input
-                                  value={choice}
-                                  onChange={(e) => {
-                                    const newChoices = [...problem.choices];
-                                    newChoices[choiceIndex] = e.target.value;
-                                    handleEditProblem(problem.id, 'choices', newChoices);
-                                  }}
-                                  className="flex-1 border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-red-500 focus:border-red-500"
+                                type="text"
+                                value={value}
+                                onChange={(e) => handleEditProblem(problem.id, 'choices', {
+                                  ...problem.choices,
+                                  [key]: e.target.value
+                                })}
+                                className="flex-1 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                               ) : (
-                                <span className="flex-1 text-gray-900 bg-gray-50 p-2 rounded">
-                                  {choice}
+                              <span className={`flex-1 p-2 rounded ${problem.correct_answer === key ? 'bg-green-50 text-green-800 font-medium' : 'text-gray-700'}`}>
+                                {value}
                                 </span>
                               )}
                             </div>
@@ -525,58 +327,157 @@ const ProblemManagement = () => {
                       </div>
                     )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">정답</label>
+                  {/* 정답 */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">정답</label>
                       {problem.isEditing ? (
-                        <input
+                      problem.type === 'multiple_choice' ? (
+                        <select
                           value={problem.correct_answer}
                           onChange={(e) => handleEditProblem(problem.id, 'correct_answer', e.target.value)}
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
-                        />
+                          className="w-32 p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          {Object.keys(problem.choices || {}).map(key => (
+                            <option key={key} value={key}>{key}</option>
+                          ))}
+                        </select>
                       ) : (
-                        <p className="mt-1 text-green-600 font-medium bg-green-50 p-2 rounded-md">
-                          {problem.correct_answer}
+                        <textarea
+                          value={problem.correct_answer}
+                          onChange={(e) => handleEditProblem(problem.id, 'correct_answer', e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          rows="2"
+                        />
+                      )
+                      ) : (
+                      <p className="text-gray-900 bg-green-50 p-3 rounded-lg">
+                        {problem.type === 'multiple_choice' ? `${problem.correct_answer}. ${problem.choices?.[problem.correct_answer] || ''}` : problem.correct_answer}
                         </p>
                       )}
                     </div>
 
-                    {problem.explanation && (
+                  {/* 해설 */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">해설</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">해설</label>
                         {problem.isEditing ? (
                           <textarea
                             value={problem.explanation}
                             onChange={(e) => handleEditProblem(problem.id, 'explanation', e.target.value)}
-                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
-                            rows="2"
+                        className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows="3"
                           />
                         ) : (
-                          <p className="mt-1 text-gray-700 bg-blue-50 p-3 rounded-md">
-                            {problem.explanation}
-                          </p>
-                        )}
-                      </div>
+                      <p className="text-gray-700 bg-blue-50 p-3 rounded-lg">{problem.explanation}</p>
                     )}
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        )}
+      </main>
 
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+      {/* 문제 생성 모달 */}
+      {showGenerationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">🧠 RAG 기반 문제 생성</h2>
+            <form onSubmit={handleGenerateProblems}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">과목</label>
+                  <select
+                    value={generationForm.subject}
+                    onChange={(e) => setGenerationForm(prev => ({ ...prev, subject: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">과목 선택</option>
+                    <option value="간호학과">간호학과</option>
+                    <option value="물리치료학과">물리치료학과</option>
+                    <option value="작업치료학과">작업치료학과</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">문제 유형</label>
+                  <select
+                    value={generationForm.questionType}
+                    onChange={(e) => setGenerationForm(prev => ({ ...prev, questionType: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="multiple_choice">객관식</option>
+                    <option value="short_answer">단답형</option>
+                    <option value="essay">서술형</option>
+                    <option value="true_false">O/X</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">난이도</label>
+                  <select
+                    value={generationForm.difficulty}
+                    onChange={(e) => setGenerationForm(prev => ({ ...prev, difficulty: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="easy">쉬움</option>
+                    <option value="medium">보통</option>
+                    <option value="hard">어려움</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">생성할 문제 수</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={generationForm.count}
+                    onChange={(e) => setGenerationForm(prev => ({ ...prev, count: parseInt(e.target.value) }))}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">키워드 (선택)</label>
+                  <input
+                    type="text"
+                    value={generationForm.keywords}
+                    onChange={(e) => setGenerationForm(prev => ({ ...prev, keywords: e.target.value }))}
+                    placeholder="예: 간호과정, 환자안전, 약물관리"
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">추가 컨텍스트 (선택)</label>
+                  <textarea
+                    value={generationForm.context}
+                    onChange={(e) => setGenerationForm(prev => ({ ...prev, context: e.target.value }))}
+                    placeholder="특정 상황이나 조건을 명시해주세요"
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows="3"
+                  />
+                </div>
+            </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => setShowParsedModal(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                  type="button"
+                  onClick={() => setShowGenerationModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
               >
                 취소
               </button>
               <button
-                onClick={handleRegisterProblems}
-                disabled={parsing}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                  type="submit"
+                  disabled={generating}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
               >
-                {parsing ? 'AI 학습 중...' : `🤖 ${parsedProblems.length}개 문제 AI 등록`}
+                  {generating ? '🧠 생성 중...' : '🚀 생성하기'}
               </button>
             </div>
+            </form>
           </div>
         </div>
       )}
@@ -584,4 +485,4 @@ const ProblemManagement = () => {
   );
 };
 
-export default ProblemManagement; 
+export default ProblemGeneration; 

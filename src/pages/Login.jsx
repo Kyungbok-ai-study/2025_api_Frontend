@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../services/api';
+import apiClient from '../services/api.js';
 import useResponsive from '../hooks/useResponsive';
 
 const Login = () => {

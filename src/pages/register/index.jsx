@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../services/api.ts';
+import apiClient from '../../services/api.js';
 import useResponsive from '../../hooks/useResponsive';
 
 const RegisterStep1 = () => {

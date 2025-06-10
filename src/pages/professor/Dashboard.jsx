@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../services/api';
+import apiClient from '../../services/api.js';
 
 const ProfessorDashboard = () => {
   const navigate = useNavigate();
@@ -11,6 +11,8 @@ const ProfessorDashboard = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [monitoringData, setMonitoringData] = useState(null);
   const [reportsData, setReportsData] = useState(null);
+  const [deepseekStats, setDeepseekStats] = useState(null);
+  const [realtimeLearning, setRealtimeLearning] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -65,14 +67,43 @@ const ProfessorDashboard = () => {
     }
 
     loadDashboardData();
+    
+    // 딥시크 학습 실시간 상태 이벤트 리스너 추가
+    const handleDeepSeekLearning = (event) => {
+      setRealtimeLearning(true);
+      
+      // 5초 후 실시간 상태 해제
+      setTimeout(() => {
+        setRealtimeLearning(false);
+        // 딥시크 통계 새로고침
+        loadDashboardData();
+      }, 5000);
+    };
+    
+    window.addEventListener('deepseek-learning-started', handleDeepSeekLearning);
+    
+    return () => {
+      window.removeEventListener('deepseek-learning-started', handleDeepSeekLearning);
+    };
   }, [navigate]);
 
   const loadDashboardData = async () => {
     try {
       console.log('교수 대시보드 데이터 로딩 시작');
-      const response = await apiClient.get('/professor/dashboard');
-      setDashboardData(response.data);
-      console.log('교수 대시보드 데이터 로딩 완료:', response.data);
+      
+      // 병렬로 데이터 로딩
+      const [dashboardResponse, deepseekResponse] = await Promise.all([
+        apiClient.get('/professor/dashboard'),
+        apiClient.get('/professor/deepseek/learning-stats').catch(() => null)
+      ]);
+      
+      setDashboardData(dashboardResponse.data);
+      console.log('교수 대시보드 데이터 로딩 완료:', dashboardResponse.data);
+      
+      if (deepseekResponse) {
+        setDeepseekStats(deepseekResponse.data.deepseek_stats);
+        console.log('딥시크 통계 로딩 완료:', deepseekResponse.data.deepseek_stats);
+      }
     } catch (error) {
       console.error('대시보드 데이터 로드 실패:', error);
       // 오류 시에도 기본 데이터 설정
@@ -233,7 +264,25 @@ const ProfessorDashboard = () => {
               onClick={() => navigate('/professor/problems')}
               className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-4 text-sm font-medium"
             >
-              문제 등록
+              🧠 문제 생성
+            </button>
+            <button 
+              onClick={() => navigate('/professor/rag-update')}
+              className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-4 text-sm font-medium"
+            >
+              📚 RAG 업데이트
+            </button>
+            <button 
+              onClick={() => navigate('/professor/question-review')}
+              className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-4 text-sm font-medium"
+            >
+              문제 검토
+            </button>
+            <button 
+              onClick={() => navigate('/professor/deepseek-learning')}
+              className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-4 text-sm font-medium"
+            >
+              🤖 딥시크 학습
             </button>
             <button 
               onClick={() => navigate('/professor/reports')}
@@ -261,7 +310,7 @@ const ProfessorDashboard = () => {
           </div>
 
           {/* 핵심 지표 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
             <div className="bg-white overflow-hidden shadow rounded-lg">
               <div className="p-5">
                 <div className="flex items-center">
@@ -349,6 +398,41 @@ const ProfessorDashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* 딥시크 학습 상태 카드 */}
+            <div className="bg-white overflow-hidden shadow rounded-lg relative">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      realtimeLearning ? 'bg-green-500 animate-pulse' : 
+                      deepseekStats?.system_status === 'operational' ? 'bg-blue-500' : 'bg-gray-400'
+                    }`}>
+                      <span className="text-white text-sm font-bold">🤖</span>
+                    </div>
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        딥시크 학습
+                      </dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {deepseekStats?.learning_stats?.total_learned || 0}개 학습됨
+                      </dd>
+                      <dd className="text-xs text-gray-500">
+                        {realtimeLearning ? '학습 진행 중...' : 
+                         deepseekStats?.system_status === 'operational' ? '정상 작동' : '대기 중'}
+                      </dd>
+                    </dl>
+                  </div>
+                  {realtimeLearning && (
+                    <div className="absolute top-2 right-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -357,7 +441,7 @@ const ProfessorDashboard = () => {
               <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">빠른 관리</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <button 
                       onClick={() => navigate('/professor/assignments')}
                       className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -370,9 +454,17 @@ const ProfessorDashboard = () => {
                       onClick={() => navigate('/professor/problems')}
                       className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      <div className="text-2xl mb-2">❓</div>
-                      <div className="text-sm font-medium text-gray-900">문제 등록</div>
-                      <div className="text-xs text-gray-500">새 문제 추가</div>
+                      <div className="text-2xl mb-2">🧠</div>
+                      <div className="text-sm font-medium text-gray-900">RAG 문제 생성</div>
+                      <div className="text-xs text-gray-500">AI 기반 문제 생성</div>
+                    </button>
+                    <button 
+                      onClick={() => navigate('/professor/rag-update')}
+                      className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="text-2xl mb-2">📚</div>
+                      <div className="text-sm font-medium text-gray-900">RAG 업데이트</div>
+                      <div className="text-xs text-gray-500">지식베이스 관리</div>
                     </button>
                     <button 
                       onClick={() => navigate('/professor/analytics')}
@@ -381,6 +473,17 @@ const ProfessorDashboard = () => {
                       <div className="text-2xl mb-2">📊</div>
                       <div className="text-sm font-medium text-gray-900">학습 분석</div>
                       <div className="text-xs text-gray-500">성과 리포트 생성</div>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <button 
+                      onClick={() => navigate('/professor/deepseek-learning')}
+                      className="p-4 border border-gray-200 rounded-lg hover:bg-purple-50 transition-colors"
+                    >
+                      <div className="text-2xl mb-2">🤖</div>
+                      <div className="text-sm font-medium text-gray-900">딥시크 학습</div>
+                      <div className="text-xs text-gray-500">AI 모델 학습 관리</div>
                     </button>
                   </div>
                 </div>

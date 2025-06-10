@@ -350,17 +350,24 @@ const AdminDashboard = () => {
       {/* 네비게이션 메뉴 */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-purple-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+          <div className="flex space-x-8 overflow-x-auto">
             {[
               { id: 'overview', name: '대시보드', icon: '📊' },
               { id: 'users', name: '사용자 관리', icon: '👥' },
               { id: 'verification', name: '인증 관리', icon: '✅' },
+              { id: 'deepseek', name: '딥시크 관리', icon: '🤖' },
               { id: 'system', name: '시스템 모니터링', icon: '🖥️' },
               { id: 'settings', name: '설정', icon: '⚙️' }
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (tab.id === 'deepseek') {
+                    navigate('/admin/deepseek-management');
+                  } else {
+                    setActiveTab(tab.id);
+                  }
+                }}
                 className={`flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-all duration-300 ${
                   activeTab === tab.id
                     ? 'border-purple-500 text-purple-600'

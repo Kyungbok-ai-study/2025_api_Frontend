@@ -1,147 +1,147 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../../services/api';
 
 const DiagnosticTest = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState('intro'); // 'intro', 'testing', 'result'
+  const [user, setUser] = useState(null);
+  const [currentStep, setCurrentStep] = useState('checking'); // 'checking', 'intro', 'testing', 'result'
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(20 * 60); // 20분
+  const [timeLeft, setTimeLeft] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 진단테스트 관련 상태
+  const [testInfo, setTestInfo] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [submissionId, setSubmissionId] = useState(null);
+  const [isRequired, setIsRequired] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [testResult, setTestResult] = useState(null);
 
-  // 하드코딩된 문제들
-  const questions = [
-    {
-      id: 1,
-      subject: '자료구조',
-      content: '다음 중 스택(Stack)의 특징으로 올바른 것은?',
-      options: [
-        'FIFO(First In First Out) 구조이다',
-        'LIFO(Last In First Out) 구조이다',
-        '중간 위치의 데이터에 직접 접근이 가능하다',
-        '데이터의 크기에 제한이 없다'
-      ],
-      correct: 1,
-      difficulty: '기초'
-    },
-    {
-      id: 2,
-      subject: '알고리즘',
-      content: '시간 복잡도가 O(n²)인 정렬 알고리즘은?',
-      options: [
-        '병합 정렬 (Merge Sort)',
-        '퀵 정렬 (Quick Sort)',
-        '버블 정렬 (Bubble Sort)',
-        '힙 정렬 (Heap Sort)'
-      ],
-      correct: 2,
-      difficulty: '기초'
-    },
-    {
-      id: 3,
-      subject: '데이터베이스',
-      content: 'SQL에서 데이터를 조회할 때 사용하는 명령어는?',
-      options: [
-        'INSERT',
-        'UPDATE',
-        'SELECT',
-        'DELETE'
-      ],
-      correct: 2,
-      difficulty: '기초'
-    },
-    {
-      id: 4,
-      subject: '네트워크',
-      content: 'TCP/IP 모델에서 가장 하위 계층은?',
-      options: [
-        '응용 계층',
-        '전송 계층',
-        '인터넷 계층',
-        '네트워크 접근 계층'
-      ],
-      correct: 3,
-      difficulty: '기초'
-    },
-    {
-      id: 5,
-      subject: '프로그래밍',
-      content: '다음 중 객체지향 프로그래밍의 특징이 아닌 것은?',
-      options: [
-        '캡슐화',
-        '상속',
-        '다형성',
-        '절차화'
-      ],
-      correct: 3,
-      difficulty: '중급'
-    },
-    {
-      id: 6,
-      subject: '자료구조',
-      content: '이진 트리에서 왼쪽 자식 → 루트 → 오른쪽 자식 순서로 방문하는 순회 방법은?',
-      options: [
-        '전위 순회 (Preorder)',
-        '중위 순회 (Inorder)',
-        '후위 순회 (Postorder)',
-        '레벨 순회 (Level order)'
-      ],
-      correct: 1,
-      difficulty: '중급'
-    },
-    {
-      id: 7,
-      subject: '알고리즘',
-      content: '다이나믹 프로그래밍의 핵심 원리는?',
-      options: [
-        '분할 정복',
-        '탐욕 선택',
-        '최적 부분 구조와 중복 부분 문제',
-        '백트래킹'
-      ],
-      correct: 2,
-      difficulty: '중급'
-    },
-    {
-      id: 8,
-      subject: '데이터베이스',
-      content: '데이터베이스의 ACID 속성에 포함되지 않는 것은?',
-      options: [
-        '원자성 (Atomicity)',
-        '일관성 (Consistency)',
-        '격리성 (Isolation)',
-        '가용성 (Availability)'
-      ],
-      correct: 3,
-      difficulty: '중급'
-    },
-    {
-      id: 9,
-      subject: '네트워크',
-      content: 'HTTP와 HTTPS의 주요 차이점은?',
-      options: [
-        '포트 번호가 다르다',
-        'HTTPS는 SSL/TLS 암호화를 사용한다',
-        'HTTP는 더 빠르다',
-        'HTTPS는 캐싱을 지원하지 않는다'
-      ],
-      correct: 1,
-      difficulty: '중급'
-    },
-    {
-      id: 10,
-      subject: '프로그래밍',
-      content: 'REST API의 설계 원칙이 아닌 것은?',
-      options: [
-        '무상태성 (Stateless)',
-        '계층화 시스템',
-        '캐시 가능성',
-        '세션 유지'
-      ],
-      correct: 3,
-      difficulty: '고급'
+  // 사용자 정보 및 진단테스트 확인
+  useEffect(() => {
+    getCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      checkDiagnosticRequired();
     }
-  ];
+  }, [user]);
+
+  const getCurrentUser = async () => {
+    try {
+      // 임시: 테스트용 사용자 정보 (실제로는 API에서 가져와야 함)
+      const testUser = {
+        id: 1,
+        name: '홍길동',
+        department: '물리치료학과',
+        email: 'test@example.com'
+      };
+      
+      setUser(testUser);
+      
+      // 실제 구현은 아래와 같이 할 예정
+      /*
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await apiClient.get('/user/profile');
+      setUser(response.data);
+      */
+    } catch (err) {
+      console.error('사용자 정보 가져오기 오류:', err);
+      localStorage.removeItem('token');
+      navigate('/login');
+    }
+  };
+
+  const checkDiagnosticRequired = async () => {
+    if (!user || !user.department) {
+      setError('사용자 정보를 확인할 수 없습니다.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 물리치료학과만 진단테스트 필수로 설정
+      if (user.department === "물리치료학과") {
+        // 과목 목록에서 물리치료학과가 있는지 확인
+        const subjectsResponse = await apiClient.get('/diagnosis/subjects');
+        const subjects = subjectsResponse.data;
+        
+        if (subjects.includes('physical_therapy')) {
+          // 진단테스트가 필요한 경우
+          setIsRequired(true);
+          setCurrentStep('intro');
+        } else {
+          setError('물리치료학과 진단테스트가 준비되지 않았습니다.');
+        }
+      } else {
+        // 다른 학과는 진단테스트 선택사항
+        setIsRequired(false);
+        navigate('/student');
+        return;
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('진단테스트 확인 오류:', err);
+      setError('진단테스트 정보를 가져오는데 실패했습니다.');
+      setLoading(false);
+    }
+  };
+
+  const startDiagnosticTest = async () => {
+    if (!user || !user.department) {
+      setError('사용자 정보를 확인할 수 없습니다.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // 기존 diagnosis API 사용
+      const response = await apiClient.post('/diagnosis/start', {
+        subject: 'physical_therapy',
+        description: '물리치료학과 진단테스트',
+        max_time_minutes: 60
+      });
+      
+      const data = response.data;
+      
+
+
+      // API 응답 구조에 맞게 데이터 설정
+      setTestInfo({
+        id: data.id,
+        title: '물리치료학과 진단테스트',
+        description: data.description || '물리치료학과 진단테스트',
+        total_questions: data.questions?.length || 30,
+        time_limit: data.max_time_minutes || 60,
+        subject: data.subject || 'physical_therapy'
+      });
+      
+      setQuestions(data.questions || []);
+      setSubmissionId(data.id); // test_session_id
+      setTimeLeft((data.max_time_minutes || 60) * 60); // 분을 초로 변환
+      
+      // 빈 답안으로 시작
+      setAnswers({});
+
+      setCurrentStep('testing');
+      setLoading(false);
+    } catch (err) {
+      console.error('진단테스트 시작 오류:', err);
+      setError('진단테스트를 시작하는데 실패했습니다.');
+      setLoading(false);
+    }
+  };
 
   // 타이머 효과
   useEffect(() => {
@@ -167,10 +167,12 @@ const DiagnosticTest = () => {
     const handleKeyPress = (e) => {
       // 숫자 키 1-4로 선택지 선택
       if (e.key >= '1' && e.key <= '4') {
-        const optionIndex = parseInt(e.key) - 1;
         const currentQuestion = questions[currentQuestionIndex];
-        if (optionIndex < currentQuestion.options.length) {
-          handleAnswerSelect(currentQuestion.id, optionIndex);
+        if (currentQuestion && currentQuestion.choices) {
+          const keyIndex = parseInt(e.key) - 1;
+          if (keyIndex < currentQuestion.choices.length) {
+            handleAnswerSelect(currentQuestion.id, e.key);
+          }
         }
       }
       // 좌우 화살표로 문제 이동
@@ -206,6 +208,7 @@ const DiagnosticTest = () => {
   };
 
   const handleAnswerSelect = (questionId, answerIndex) => {
+    // 로컬 상태에만 저장 (기존 API는 한 번에 제출하는 방식)
     setAnswers(prev => ({
       ...prev,
       [questionId]: answerIndex
@@ -225,31 +228,98 @@ const DiagnosticTest = () => {
   };
 
   const submitTest = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !submissionId) return;
     
     setIsSubmitting(true);
     
-    // 결과 계산
-    const correctAnswers = questions.filter(
-      q => answers[q.id] === q.correct
-    ).length;
-    const score = Math.round((correctAnswers / questions.length) * 100);
+    try {
+      // 답안을 기존 API 형식으로 변환 (답안이 있는 문제만)
+      const answersArray = questions
+        .filter(question => answers[question.id] && answers[question.id].trim() !== '') // 빈 답안 제외
+        .map(question => ({
+          question_id: question.id,
+          answer: String(answers[question.id]),  // 문자열로 확실히 변환
+          time_spent: 60, // 임시 값 (나중에 실제 시간 추적 구현)
+          confidence_level: 3 // 임시 값
+        }));
 
-    // 간단한 로딩 시뮬레이션
-    await new Promise(resolve => setTimeout(resolve, 2000));
+      // 최소 1개 이상의 답안이 있는지 확인
+      if (answersArray.length === 0) {
+        setError('최소 1개 이상의 문제에 답변해야 합니다.');
+        return;
+      }
 
-    setCurrentStep('result');
-    setIsSubmitting(false);
+      // 진단테스트 제출
+      const response = await apiClient.post('/diagnosis/submit', {
+        test_session_id: submissionId,
+        answers: answersArray,
+        total_time_spent: (testInfo?.time_limit || 60) * 60 - timeLeft
+      });
+      
+      const result = response.data;
+      
+      // 결과 화면 대신 학습 분석 페이지로 이동
+      navigate('/student/analysis', {
+        state: {
+          testResult: result,
+          testSessionId: submissionId
+        }
+      });
+    } catch (err) {
+      console.error('테스트 제출 오류:', err);
+      setError('테스트 제출에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const startTest = () => {
-    setCurrentStep('testing');
-    setTimeLeft(20 * 60); // 20분 재설정
+    startDiagnosticTest();
   };
 
   const goToDashboard = () => {
     navigate('/student');
   };
+
+  // 로딩 화면
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">진단테스트 확인 중...</h2>
+          <p className="text-gray-600">잠시만 기다려주세요.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 화면
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
+          <div className="text-6xl mb-4">❌</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">오류가 발생했습니다</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="space-x-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all"
+            >
+              다시 시도
+            </button>
+            <button
+              onClick={goToDashboard}
+              className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-gray-400"
+            >
+              대시보드로
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 시작 화면
   if (currentStep === 'intro') {
@@ -259,9 +329,12 @@ const DiagnosticTest = () => {
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* 헤더 */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-12 text-white text-center">
-              <div className="text-7xl mb-6">🎯</div>
-              <h1 className="text-4xl font-bold mb-4">학습 능력 진단테스트</h1>
+              <div className="text-7xl mb-6">🏥</div>
+              <h1 className="text-4xl font-bold mb-4">물리치료학과 진단테스트</h1>
               <p className="text-xl text-blue-100">현재 수준을 파악하고 맞춤형 학습 계획을 세워보세요</p>
+              <p className="text-lg text-blue-200 mt-2">
+                {user?.department} 학생을 위한 전문 진단테스트
+              </p>
             </div>
 
             {/* 내용 */}
@@ -273,7 +346,7 @@ const DiagnosticTest = () => {
                     <span className="text-2xl">⏰</span>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">소요 시간</h3>
-                  <p className="text-gray-600">약 20분</p>
+                  <p className="text-gray-600">{testInfo ? `${testInfo.time_limit}분` : '60분'}</p>
                 </div>
 
                 <div className="text-center">
@@ -281,7 +354,7 @@ const DiagnosticTest = () => {
                     <span className="text-2xl">📝</span>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">문제 수</h3>
-                  <p className="text-gray-600">{questions.length}문제</p>
+                  <p className="text-gray-600">{testInfo ? `${testInfo.total_questions}문제` : '30문제'}</p>
                 </div>
 
                 <div className="text-center">
@@ -289,7 +362,7 @@ const DiagnosticTest = () => {
                     <span className="text-2xl">📊</span>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">평가 분야</h3>
-                  <p className="text-gray-600">5개 전공 분야</p>
+                  <p className="text-gray-600">물리치료 전문 분야</p>
                 </div>
               </div>
 
@@ -331,6 +404,21 @@ const DiagnosticTest = () => {
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
     const isTimeWarning = timeLeft < 300; // 5분 미만
+
+
+
+    // currentQuestion이 없으면 로딩 표시
+    if (!currentQuestion) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">문제 로딩 중...</h2>
+            <p className="text-gray-600">잠시만 기다려주세요.</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="min-h-screen bg-black">
@@ -374,10 +462,12 @@ const DiagnosticTest = () => {
             {/* 과목 정보 */}
             <div className="text-center mb-8">
               <span className="inline-block px-4 py-2 bg-blue-900 text-blue-300 rounded-full text-sm font-medium mr-3">
-                {currentQuestion.subject}
+                {testInfo?.subject === 'physical_therapy' ? '물리치료' : '물리치료'}
               </span>
               <span className="inline-block px-4 py-2 bg-gray-800 text-gray-300 rounded-full text-sm">
-                {currentQuestion.difficulty}
+                {currentQuestion.difficulty === '1' ? '쉬움' : 
+                 currentQuestion.difficulty === '2' ? '보통' : 
+                 ['4', '5'].includes(currentQuestion.difficulty) ? '어려움' : '보통'}
               </span>
             </div>
 
@@ -391,43 +481,49 @@ const DiagnosticTest = () => {
 
               {/* 선택지 */}
               <div className="space-y-4 mb-10">
-                {currentQuestion.options.map((option, index) => (
-                  <label
-                    key={index}
-                    className={`group block p-6 rounded-2xl cursor-pointer transition-all duration-200 border-2 ${
-                      answers[currentQuestion.id] === index
-                        ? 'border-blue-500 bg-blue-900/30 shadow-lg shadow-blue-500/20'
-                        : 'border-gray-600 bg-gray-800/50 hover:border-gray-500 hover:bg-gray-700/50'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mr-4 transition-all ${
-                        answers[currentQuestion.id] === index
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-gray-500 group-hover:border-gray-400'
-                      }`}>
-                        {answers[currentQuestion.id] === index && (
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                        )}
+                {(currentQuestion.choices || []).map((choice, index) => {
+                  // "1. 선택지내용" 형태를 분리
+                  const choiceNumber = (index + 1).toString();
+                  const choiceText = choice.replace(/^\d+\.\s*/, ''); // 앞의 "1. " 제거
+                  
+                  return (
+                    <label
+                      key={index}
+                      className={`group block p-6 rounded-2xl cursor-pointer transition-all duration-200 border-2 ${
+                        answers[currentQuestion.id] === choiceNumber
+                          ? 'border-blue-500 bg-blue-900/30 shadow-lg shadow-blue-500/20'
+                          : 'border-gray-600 bg-gray-800/50 hover:border-gray-500 hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mr-4 transition-all ${
+                          answers[currentQuestion.id] === choiceNumber
+                            ? 'border-blue-500 bg-blue-500'
+                            : 'border-gray-500 group-hover:border-gray-400'
+                        }`}>
+                          {answers[currentQuestion.id] === choiceNumber && (
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                        <input
+                          type="radio"
+                          name={`question-${currentQuestion.id}`}
+                          value={choiceNumber}
+                          checked={answers[currentQuestion.id] === choiceNumber}
+                          onChange={() => handleAnswerSelect(currentQuestion.id, choiceNumber)}
+                          className="hidden"
+                        />
+                        <div className={`text-xl font-medium transition-colors ${
+                          answers[currentQuestion.id] === choiceNumber 
+                            ? 'text-white' 
+                            : 'text-gray-300 group-hover:text-white'
+                        }`}>
+                          {choiceNumber}. {choiceText}
+                        </div>
                       </div>
-                      <input
-                        type="radio"
-                        name={`question-${currentQuestion.id}`}
-                        value={index}
-                        checked={answers[currentQuestion.id] === index}
-                        onChange={() => handleAnswerSelect(currentQuestion.id, index)}
-                        className="hidden"
-                      />
-                      <div className={`text-xl font-medium transition-colors ${
-                        answers[currentQuestion.id] === index 
-                          ? 'text-white' 
-                          : 'text-gray-300 group-hover:text-white'
-                      }`}>
-                        {index + 1}. {option}
-                      </div>
-                    </div>
-                  </label>
-                ))}
+                    </label>
+                  );
+                })}
               </div>
 
               {/* 하단 네비게이션 */}
@@ -453,7 +549,7 @@ const DiagnosticTest = () => {
                       className={`w-3 h-3 rounded-full transition-all ${
                         index === currentQuestionIndex
                           ? 'bg-blue-500 scale-125'
-                          : answers[questions[index].id] !== undefined
+                          : answers[questions[index]?.id] !== undefined
                           ? 'bg-green-500'
                           : 'bg-gray-600'
                       }`}
@@ -506,103 +602,8 @@ const DiagnosticTest = () => {
     );
   }
 
-  // 결과 화면
-  if (currentStep === 'result') {
-    const correctAnswers = questions.filter(q => answers[q.id] === q.correct).length;
-    const score = Math.round((correctAnswers / questions.length) * 100);
-    const level = score >= 80 ? '고급' : score >= 60 ? '중급' : '초급';
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-        <div className="max-w-4xl mx-auto py-12 px-4">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* 축하 헤더 */}
-            <div className="bg-gradient-to-r from-green-500 to-blue-500 px-8 py-12 text-white text-center">
-              <div className="text-8xl mb-6">🎉</div>
-              <h1 className="text-4xl font-bold mb-4">진단테스트 완료!</h1>
-              <p className="text-xl text-green-100">수고하셨습니다. 결과를 확인해보세요.</p>
-            </div>
-
-            {/* 결과 내용 */}
-            <div className="p-8">
-              {/* 주요 결과 */}
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-blue-600 mb-2">{score}점</div>
-                  <div className="text-gray-600 text-lg">종합 점수</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-green-600 mb-2">{correctAnswers}/{questions.length}</div>
-                  <div className="text-gray-600 text-lg">정답 수</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-3xl font-bold mb-2 px-4 py-2 rounded-xl ${
-                    level === '고급' ? 'bg-green-100 text-green-700' :
-                    level === '중급' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {level} 수준
-                  </div>
-                  <div className="text-gray-600 text-lg">현재 레벨</div>
-                </div>
-              </div>
-
-              {/* 과목별 결과 */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">📊 과목별 결과</h2>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {['자료구조', '알고리즘', '데이터베이스', '네트워크', '프로그래밍'].map(subject => {
-                    const subjectQuestions = questions.filter(q => q.subject === subject);
-                    const subjectCorrect = subjectQuestions.filter(q => answers[q.id] === q.correct).length;
-                    const subjectScore = Math.round((subjectCorrect / subjectQuestions.length) * 100);
-                    
-                    return (
-                      <div key={subject} className="bg-gray-50 rounded-xl p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-semibold text-gray-800">{subject}</span>
-                          <span className="text-lg font-bold text-blue-600">{subjectScore}점</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
-                          <div 
-                            className="bg-blue-500 h-3 rounded-full transition-all duration-1000"
-                            style={{ width: `${subjectScore}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {subjectCorrect}/{subjectQuestions.length} 정답
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 액션 버튼 */}
-              <div className="text-center space-x-4">
-                <button
-                  onClick={goToDashboard}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 font-semibold shadow-lg"
-                >
-                  🏠 대시보드로 이동
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentStep('intro');
-                    setAnswers({});
-                    setCurrentQuestionIndex(0);
-                    setTimeLeft(20 * 60);
-                  }}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
-                >
-                  🔄 다시 응시하기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 테스트 완료 후 바로 학습 분석 페이지로 이동하므로 
+  // 별도의 결과 화면이 필요 없음
 
   return null;
 };

@@ -5,6 +5,7 @@ import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import StudentDashboard from "./pages/student/Dashboard.jsx";
 import DiagnosticTest from "./pages/student/DiagnosticTest.jsx";
+import LearningAnalysis from "./pages/student/LearningAnalysis.jsx";
 import ProfessorDashboard from "./pages/professor/Dashboard.jsx";
 import AdminDashboard from "./pages/admin/Dashboard.jsx";
 import MyPage from "./pages/my/MyPage.jsx";
@@ -47,19 +48,21 @@ const App = () => {
         <Route path="/register/create" element={<RegisterStep4 />} />
           <Route path="/register/success" element={<RegisterSuccess />} />
           
-        {/* 학생용 라우트들 */}
-        <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-        <Route path="/student/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-        <Route path="/diagnosis" element={<DiagnosticTest />} />
-        <Route path="/student/diagnosis" element={<DiagnosticTest />} />
+        {/* 학생용 라우트들 - 구체적인 라우트를 먼저 배치 */}
+        <Route path="/student/analysis/:testId" element={<ProtectedRoute><LearningAnalysis /></ProtectedRoute>} />
+        <Route path="/student/analysis" element={<ProtectedRoute><LearningAnalysis /></ProtectedRoute>} />
         <Route path="/student/diagnosis/:subject" element={<DiagnosticTest />} />
-        <Route path="/student/problems" element={<StudentDashboard />} />
+        <Route path="/student/diagnosis" element={<DiagnosticTest />} />
+        <Route path="/student/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
         <Route path="/student/problems/:subject" element={<StudentDashboard />} />
-        <Route path="/student/results" element={<StudentDashboard />} />
+        <Route path="/student/problems" element={<StudentDashboard />} />
         <Route path="/student/results/:testId" element={<StudentDashboard />} />
+        <Route path="/student/results" element={<StudentDashboard />} />
         <Route path="/student/learning" element={<StudentDashboard />} />
         <Route path="/student/assignments" element={<StudentDashboard />} />
         <Route path="/student/profile" element={<StudentDashboard />} />
+        <Route path="/diagnosis" element={<DiagnosticTest />} />
+        <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
           
         {/* 교수용 라우트들 */}
           <Route path="/professor" element={<ProfessorDashboard />} />
@@ -75,7 +78,7 @@ const App = () => {
         <Route path="/professor/analytics/:subject" element={<Analytics />} />
         <Route path="/professor/students" element={<StudentList />} />
         <Route path="/professor/students/:studentId" element={<StudentList />} />
-          <Route path="/professor/assignments" element={<AssignmentManagement />} />
+        <Route path="/professor/assignments" element={<AssignmentManagement />} />
         <Route path="/professor/assignments/:assignmentId" element={<AssignmentManagement />} />
         <Route path="/professor/problems" element={<ProblemGeneration />} />
         <Route path="/professor/problems/:problemId" element={<ProblemGeneration />} />

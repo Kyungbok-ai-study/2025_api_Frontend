@@ -55,7 +55,7 @@ export interface DiagnosisSubmission {
   selectedChoice: number | null;
   eliminatedChoices: number[];
   confidenceLevel: 'low' | 'medium' | 'high';
-  timeSpent: number;
+  timeSpentSeconds: number;
   question: string;
   choices: any[];
   timestamp: string;

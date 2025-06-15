@@ -27,8 +27,7 @@ import Analytics from "./pages/professor/Analytics.jsx";
 import StudentList from "./pages/professor/StudentList.jsx";
 import AssignmentManagement from "./pages/professor/AssignmentManagement.jsx";
 import ProblemGeneration from "./pages/professor/ProblemManagement.jsx";
-import DeepSeekLearning from "./pages/professor/DeepSeekLearning.jsx";
-import DeepSeekManagement from "./pages/admin/DeepSeekManagement.jsx";
+
 import "./App.css";
 
 const App = () => {
@@ -82,14 +81,14 @@ const App = () => {
         <Route path="/professor/assignments/:assignmentId" element={<AssignmentManagement />} />
         <Route path="/professor/problems" element={<ProblemGeneration />} />
         <Route path="/professor/problems/:problemId" element={<ProblemGeneration />} />
-        <Route path="/professor/deepseek-learning" element={<DeepSeekLearning />} />
+
         <Route path="/professor/upload" element={<ProfessorDashboard />} />
         <Route path="/professor/settings" element={<ProfessorDashboard />} />
           
         {/* 관리자용 라우트들 */}
           <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/deepseek-management" element={<DeepSeekManagement />} />
+
         <Route path="/admin/users" element={<AdminDashboard />} />
         <Route path="/admin/users/:userId" element={<AdminDashboard />} />
         <Route path="/admin/professors" element={<AdminDashboard />} />

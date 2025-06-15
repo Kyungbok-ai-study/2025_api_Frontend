@@ -346,13 +346,7 @@ const QuestionReview = () => {
         setQuestions(prev => prev.filter(q => !selectedQuestions.includes(q.id)));
         setSelectedQuestions([]);
         
-        // 승인 시 딥시크 학습 이벤트 발생
-        if (action === 'approve') {
-          const event = new CustomEvent('deepseek-learning-started', { 
-            detail: { questionCount: selectedQuestions.length } 
-          });
-          window.dispatchEvent(event);
-        }
+
         
         alert(`✅ ${selectedQuestions.length}개 문제가 ${action === 'approve' ? '승인' : '거부'}되었습니다.`);
       } else {

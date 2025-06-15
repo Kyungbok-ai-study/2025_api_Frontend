@@ -1,175 +1,78 @@
-# 🎓 CampusON - AI 맞춤형 튜터링 플랫폼
+<strong>경복대학교 빅데이터과 AI팀의 'API-AI' 프론트엔드 레포지토리 입니다.</strong>
 
-CampusON은 React + TypeScript 기반의 혁신적인 교육 플랫폼입니다. 
-AI 기반 맞춤형 학습과 "1문제 30선택지" 진단 테스트를 통해 개인별 최적화된 학습 경험을 제공합니다.
+## 서비스 소개
 
-## 🎯 주요 기능
+- <strong>'API-AI'</strong>는 AI-API를 사용하여 학생들에게 AI 스터디를 제공하는 서비스입니다.
 
-- **🔍 혁신적 진단 테스트**: 1문제 30선택지 방식으로 정확한 수준 진단
-- **🤖 AI 맞춤형 학습**: 개인 학습 패턴 분석 및 맞춤형 문제 추천
-- **📊 실시간 분석**: 학습 진도와 성과를 실시간으로 추적
-- **👨‍🏫 교수 대시보드**: 교수님이 학생들의 학습 현황을 모니터링
-- **🏫 학교 정보 연동**: 공공데이터 API를 통한 실제 학교/학과 정보
 
-## 🛠️ 기술 스택
+## 서비스 타겟
 
-- **프론트엔드**: React 18, TypeScript, Material-UI
-- **상태관리**: Zustand
-- **API 통신**: Axios, React Query
-- **라우팅**: React Router DOM
-- **차트**: Chart.js, MUI X Charts
-- **백엔드 연동**: FastAPI, PostgreSQL
+- 경복대학교 모든 재학생
 
-## 🚀 시작하기
 
-### 1. 프로젝트 클론 및 설치
+## 👋 팀 소개
+#### 기획/디자인🎨
+| Name                                         | Major            | Email                |
+| -------------------------------------------- | --------------  | ----------------------- |
+| [정재원](https://github.com/gabrieljung0727)   | 경복대학교 빅데이터과  | gabrieljay0727@kbu.ac.kr |
 
-```bash
-git clone <repository-url>
-cd campuson-react
-npm install
-```
 
-### 2. 환경변수 설정
+#### 백엔드💻
+| Name                                         | Major            | Email                |
+| -------------------------------------------- | --------------  | ----------------------- |
+| [정재원](https://github.com/gabrieljung0727)   | 경복대학교 빅데이터과  | gabrieljay0727@kbu.ac.kr |
+| [천영진](https://github.com/cjsdudwls1) |  경복대학교 빅데이터과  | cjsdudwls1357@gmail.com |
 
-프로젝트 루트에 `.env` 파일을 생성하고 다음과 같이 설정하세요:
 
-```env
-# 공공데이터포털 API 키 (한국대학교육협의회 대학정보)
-REACT_APP_UNIV_API_KEY=발급받은_API_키
+#### 프론트엔드🌐
+| Name                                         | Major            | Email                |
+| -------------------------------------------- | --------------  | ----------------------- |
+| [정재원](https://github.com/gabrieljung0727)   | 경복대학교 빅데이터과  | gabrieljay0727@kbu.ac.kr |
 
-# 백엔드 API URL
-REACT_APP_API_URL=http://localhost:8000/api
 
-# 개발/프로덕션 환경
-REACT_APP_ENV=development
-```
+## 🚀 커밋 규칙 (Commit Convention)
 
-### 3. 공공데이터 API 키 발급 방법
-
-1. [공공데이터포털](https://www.data.go.kr) 회원가입
-2. "한국대학교육협의회_대학알리미 대학 기본 정보" 검색
-3. 활용신청 및 승인 대기 (보통 즉시 승인)
-4. 마이페이지에서 발급받은 인증키 확인
-5. `.env` 파일에 API 키 설정
-
-### 4. 개발 서버 실행
-
-```bash
-npm start
-```
-
-브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
-
-## 📁 프로젝트 구조
-
-```
-src/
-├── components/          # 재사용 가능한 컴포넌트
-│   ├── Layout.tsx       # 공통 레이아웃
-│   ├── LoginSidebar.tsx # 로그인 사이드바
-│   └── ProtectedRoute.tsx # 인증된 라우트
-├── pages/               # 페이지 컴포넌트
-│   ├── LandingPage.tsx  # 메인 랜딩 페이지
-│   ├── MultiChoiceDiagnosisTest.tsx # 30선택지 진단 테스트
-│   ├── Dashboard.tsx    # 사용자 대시보드
-│   └── ProfessorDashboard.tsx # 교수 대시보드
-├── services/            # API 서비스
-│   ├── api.ts          # 백엔드 API 클라이언트
-│   ├── schoolApi.ts    # 학교정보 API 서비스
-│   └── authService.ts  # 인증 서비스
-├── store/              # Zustand 상태 관리
-├── types/              # TypeScript 타입 정의
-└── utils/              # 유틸리티 함수
-```
-
-## 🎮 주요 화면
-
-### 1. 메인 페이지 (`/`)
-- 프로그램 소개와 주요 기능 안내
-- 우측 로그인 사이드바
-- 회원가입 링크
-
-### 2. 진단 테스트 (`/multi-diagnosis`)
-- 1문제 30선택지 방식
-- 실시간 타이머 및 자동 저장
-- 선택지 제거/복원 기능 (우클릭)
-- 확신도 선택
-
-### 3. 대시보드 (`/dashboard`)
-- 개인 학습 현황
-- AI 추천 문제
-- 최근 활동 내역
-
-## 🔧 개발 스크립트
-
-```bash
-# 개발 서버 실행
-npm start
-
-# 빌드
-npm run build
-
-# 테스트 실행
-npm test
-
-# 타입 체크
-npm run type-check
-
-# ESLint 실행
-npm run lint
-```
-
-## 📊 API 연동 현황
-
-### 공공데이터 API
-- ✅ 한국대학교육협의회 대학 기본정보
-- ✅ 대학별 학과정보
-- 🔄 기상청 API (예정)
-
-### 백엔드 API
-- ✅ 인증 (로그인/회원가입)
-- ✅ 진단 테스트 제출
-- ✅ 대시보드 데이터
-- ✅ AI 분석 서비스
-- ✅ 교수 대시보드
-
-## 🎯 다음 단계 개발 계획
-
-### Phase 1: 기본 구조 (완료)
-- ✅ 메인 페이지 및 로그인 사이드바
-- ✅ 1문제 30선택지 진단 테스트
-- ✅ 공공데이터 API 연동
-- ✅ 기본 대시보드
-
-### Phase 2: 고급 기능 (진행 중)
-- 🔄 단계별 회원가입 프로세스
-- 🔄 AI 기반 문제 추천
-- 🔄 실시간 학습 분석
-- 🔄 모바일 최적화
-
-### Phase 3: 최적화 (예정)
-- ⏳ 성능 최적화
-- ⏳ 접근성 개선
-- ⏳ 테스트 코드 작성
-- ⏳ 배포 준비
-
-## 🤝 기여하기
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 라이선스
-
-이 프로젝트는 MIT 라이선스를 따릅니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
-## 📞 연락처
-
-프로젝트 문의: [GitHub Issues](../../issues)
+| **커밋 유형**      | **설명**                                                  |
+|-------------------|---------------------------------------------------------|
+| `feat`            | 새로운 기능 추가                                          |
+| `fix`             | 버그 수정                                                 |
+| `docs`            | 문서 수정                                                 |
+| `style`           | 코드 formatting, 세미콜론 누락, 코드 자체의 변경이 없는 경우 |
+| `refactor`        | 코드 리팩토링                                             |
+| `test`            | 테스트 코드, 리팩토링 테스트 코드 추가                    |
+| `chore`           | 패키지 매니저 수정, 그 외 기타 수정 ex) .gitignore         |
+| `design`          | CSS 등 사용자 UI 디자인 변경                              |
+| `comment`         | 필요한 주석 추가 및 변경                                   |
+| `rename`          | 파일 또는 폴더 명을 수정하거나 옮기는 작업만인 경우       |
+| `remove`          | 파일을 삭제하는 작업만 수행한 경우                        |
+| `!BREAKING CHANGE`| 커다란 API 변경의 경우                                    |
+| `!HOTFIX`         | 급하게 치명적인 버그를 고쳐야 하는 경우                   |
 
 ---
+## 🛠️ 사용 언어, 개발환경, 개발 툴
 
-**CampusON** - AI가 만드는 스마트한 교육의 미래 🚀
+
+### Backend
+<img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=Python&logoColor=white"/> <img src="https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white"> <img src="https://img.shields.io/badge/Postman-FF6C37?style=flat-square&logo=Postman&logoColor=white"/> <img src="https://img.shields.io/badge/Hugging%20Face-FFD21E?logo=huggingface&logoColor=000"> <img src="https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff">
+
+### Frontend
+![React.js](https://img.shields.io/badge/-ReactJs-61DAFB?logo=react&logoColor=white&style=for-the-badge)
+
+### 인증
+<img src="https://img.shields.io/badge/JWT-black?style=plastic&logo=JSON%20web%20tokens"/>
+
+### 배포 환경
+<img src="https://img.shields.io/badge/Ubuntu-E95420?style=flat-square&logo=Ubuntu&logoColor=white"/> <img src="https://img.shields.io/badge/NGINX-009639?style=flat-square&logo=NGINX&logoColor=white"/> <img src="https://img.shields.io/badge/-XFCE-2284F2?style=flat&logo=xfce&logoColor=white"/> <img src="https://img.shields.io/badge/Firefox-FF7139?logo=Firefox&logoColor=white">   
+<img src="https://img.shields.io/badge/zustand-602c3c?style=for-the-badge&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAMAAAAolt3jAAAA8FBMVEVHcExXQzpKQDlFV16lpqyGh4tPPTdWT0weHRU7LRZGQzmxYjlaTkZsbmywVyxtXDSFhISXm6WWpcaytb6bm56gprY0LiiXmp2prLamsMa0XS42MSxkTUVDSkuyYzGihXdDV2GprbmedVxaRD1kTUWUdGFGOCN4a2OfpbI0SFFAMSddTkbCc0dWQiGFRypXQyJUQCBcTTWviDVXQyJcUDjlqCWxjkG+hBTiohtURD6lr8lORTtDVVZmPyxwSipaRSJDOzaWpsyYqMyYqM2dq8tPOjBERTs6QUKTcCeKaCJvViZdSDK4iSngoiDvqx7KkRuGEi1hAAAAOXRSTlMApZ78cB8hCAMQO/j/FOH4KlT1wFfJTjaY6SxtVexFn3Tn2sN6d671mVuJ+/PPN9CT6TfpS4C9jJaVLRihAAAAi0lEQVQIHXXBxRKCUAAF0Es/QMDubsVuGrv1///GBQ4bx3PwgwC8gFCRohs8QrQV0ZtKOZ9JcgBmU8MwqFa9kjNTUWB58f2jPOjU9juTBTbPq+vIar972MZjwPr1uDvqCFw2wQpQVm/t7Oo9gAgAFtrtZNtMFQFp7nkWU5IQECfjYbuQFvBFRJHgjw9L0A80UmaGpAAAAABJRU5ErkJggg==">
+
+### 협업 툴
+![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat-square&logo=discord&logoColor=ffffff)
+![Notion](https://img.shields.io/badge/Notion-000000?style=flat-square&logo=notion&logoColor=ffffff)
+![Figma](https://img.shields.io/badge/Figma-F24E1E?style=flat-square&logo=Figma&logoColor=white)
+![Github](https://img.shields.io/badge/Github-181717?style=flat-square&logo=Github&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?style=flat-square&logo=Git&logoColor=white)
+![Zoom](https://img.shields.io/badge/Zoom-2D8CFF?logo=zoom&logoColor=white)
+
+### 개발 도구
+![Visual Studio Code](https://img.shields.io/badge/Visual_Studio_Code-007ACC?style=flat-square&logo=visual-studio-code&logoColor=ffffff)
+![Cursor-Compatible](https://custom-icon-badges.demolab.com/badge/Cursor-000000?logo=cursor-ai-white)

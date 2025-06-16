@@ -7,7 +7,6 @@
 - UTF-8 인코딩 메타 태그 추가
 - 한글 폰트 스택 개선 (시스템 폰트 폴백 추가)
 - nginx 설정에 `charset utf-8` 추가
-- 존재하지 않는 커스텀 폰트 참조 제거
 
 ### 2. 학교 검색 기능 문제 해결
 - API URL을 환경에 따라 동적으로 설정
@@ -36,17 +35,20 @@ sudo nginx -t
 sudo systemctl status nginx
 ```
 
-### 3. SSL 인증서 확인 (HTTPS 사용 시)
+### 3. 환경변수 파일 생성 (중요!)
+프로덕션 서버에서 환경변수 파일을 생성해야 합니다:
+
 ```bash
-# Let's Encrypt 인증서가 설치되어 있는지 확인
-sudo ls -la /etc/letsencrypt/live/kbu-ai-tutor.kr/
-
-# 인증서가 없는 경우 설치
-sudo certbot --nginx -d kbu-ai-tutor.kr -d www.kbu-ai-tutor.kr
-
-# 인증서 자동 갱신 테스트
-sudo certbot renew --dry-run
+# .env.production 파일 생성
+cat > .env.production << EOF
+# 프로덕션 환경 설정
+VITE_API_BASE_URL=https://kbu-ai-tutor.kr/api
+VITE_APP_ENV=production
+EOF
 ```
+
+참고: 현재는 환경변수를 사용하지 않고 동적으로 API URL을 설정하도록 구현되어 있으므로, 
+이 파일이 없어도 정상 작동합니다.
 
 ## 배포 절차
 

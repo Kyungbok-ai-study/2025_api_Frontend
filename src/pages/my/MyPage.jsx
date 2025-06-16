@@ -114,11 +114,20 @@ const MyPage = () => {
     }, 2000);
   };
 
-  // 프로필 이미지 URL 생성 (캐시 무효화 포함)
-  const getProfileImageUrl = () => {
-    if (!user?.profile_image_url) return null;
-    const timestamp = new Date().getTime();
-    return `http://localhost:8000${user.profile_image_url}?t=${timestamp}`;
+  // 이미지 URL 생성 (캐시 방지용 타임스탬프 추가)
+  const getImageUrl = (user) => {
+    if (!user.profile_image_url) return null;
+    
+    const timestamp = Date.now();
+    const hostname = window.location.hostname;
+    
+    // 개발 환경
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://localhost:8000${user.profile_image_url}?t=${timestamp}`;
+    }
+    
+    // 프로덕션 환경
+    return `${window.location.protocol}//${hostname}${user.profile_image_url}?t=${timestamp}`;
   };
 
   const getRoleText = (role) => {
@@ -209,7 +218,7 @@ const MyPage = () => {
                     <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4 ring-4 ring-white/30 shadow-lg">
                       {user?.profile_image_url ? (
                         <img 
-                          src={getProfileImageUrl()}
+                          src={getImageUrl(user)}
                           alt="프로필" 
                           className="w-24 h-24 rounded-full object-cover"
                           onError={(e) => {

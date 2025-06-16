@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 환경에 따른 API Base URL 설정
-const getApiBaseUrl = () => {
+const getApiBaseUrl = (): string => {
   const hostname = window.location.hostname;
   
   // 개발 환경 (localhost)

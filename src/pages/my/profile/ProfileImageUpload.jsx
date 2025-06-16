@@ -124,11 +124,20 @@ const ProfileImageUpload = ({ user, onImageUpdate, onClose }) => {
     }
   };
 
-  // 현재 프로필 이미지 URL 생성 (캐시 무효화를 위한 타임스탬프 추가)
-  const getCurrentProfileImageUrl = () => {
-    if (!user?.profile_image_url) return null;
-    const timestamp = new Date().getTime();
-    return `http://localhost:8000${user.profile_image_url}?t=${timestamp}`;
+  // 이미지 URL 생성 (캐시 방지용 타임스탬프 추가)
+  const getImageUrl = (user) => {
+    if (!user.profile_image_url) return null;
+    
+    const timestamp = Date.now();
+    const hostname = window.location.hostname;
+    
+    // 개발 환경
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://localhost:8000${user.profile_image_url}?t=${timestamp}`;
+    }
+    
+    // 프로덕션 환경
+    return `${window.location.protocol}//${hostname}${user.profile_image_url}?t=${timestamp}`;
   };
 
   return (
@@ -162,7 +171,7 @@ const ProfileImageUpload = ({ user, onImageUpdate, onClose }) => {
               <div className="w-32 h-32 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                 {user?.profile_image_url ? (
                   <img 
-                    src={getCurrentProfileImageUrl()}
+                    src={getImageUrl(user)}
                     alt="현재 프로필" 
                     className="w-full h-full object-cover"
                     onError={(e) => {

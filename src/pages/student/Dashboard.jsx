@@ -124,7 +124,31 @@ const StudentDashboard = () => {
     navigate('/');
   };
 
-  const handleFeatureClick = (feature) => {
+  const handleFeatureClick = async (feature) => {
+    // 🎯 학습분석 클릭 시 사용자 상태 새로고침
+    if (feature === 'analysis') {
+      try {
+        // 최신 진단테스트 상태 확인
+        const statusResponse = await apiClient.get('/auth/diagnostic-test-status');
+        const latestStatus = statusResponse.data.data;
+        
+        if (!latestStatus.diagnostic_test_completed) {
+          alert('1차 진단테스트를 먼저 완료해주세요. 진단테스트 완료 후 학습분석을 이용하실 수 있습니다.');
+          return;
+        }
+        
+        // 상태 업데이트 후 페이지 이동
+        setDiagnosticStatus(latestStatus);
+        navigate('/student/analysis');
+        return;
+      } catch (error) {
+        console.error('❌ 진단테스트 상태 확인 실패:', error);
+        alert('상태 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+    }
+    
+    // 기타 기능들은 기존 로직 사용
     if (!diagnosticStatus?.diagnostic_test_completed) {
       alert('진단테스트를 먼저 완료해주세요. 진단테스트 완료 후 모든 기능을 이용하실 수 있습니다.');
       return;
@@ -137,9 +161,6 @@ const StudentDashboard = () => {
         break;
       case 'learning':
         navigate('/learning');
-        break;
-      case 'analysis':
-        navigate('/analysis');
         break;
       default:
         break;
@@ -253,18 +274,13 @@ const StudentDashboard = () => {
                   ? 'text-gray-500 hover:text-gray-700 hover:border-gray-300' 
                   : 'text-red-500 hover:text-red-700 hover:border-red-300'
               }`}
-              onClick={() => diagnosticStatus?.diagnostic_test_completed ? handleFeatureClick('analysis') : handleStartDiagnosticTest()}
+              onClick={handleStartDiagnosticTest}
             >
-              진단테스트
+              {diagnosticStatus?.diagnostic_test_completed ? '진단테스트 (다음 회차)' : '진단테스트 (1차)'}
             </button>
             <button 
-              className={`border-b-2 border-transparent px-1 py-4 text-sm font-medium ${
-                diagnosticStatus?.diagnostic_test_completed 
-                  ? 'text-gray-500 hover:text-gray-700 hover:border-gray-300' 
-                  : 'text-gray-300 cursor-not-allowed'
-              }`}
+              className="border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
               onClick={() => handleFeatureClick('analysis')}
-              disabled={!diagnosticStatus?.diagnostic_test_completed}
             >
               학습분석
             </button>
@@ -435,20 +451,29 @@ const StudentDashboard = () => {
                     <div className="px-4 py-5 sm:p-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">빠른 학습</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <button 
+                          onClick={() => handleFeatureClick('problems')}
+                          className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
                           <div className="text-2xl mb-2">📚</div>
                           <div className="text-sm font-medium text-gray-900">문제 풀기</div>
                           <div className="text-xs text-gray-500">새로운 문제 도전</div>
                         </button>
-                        <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <button 
+                          onClick={handleStartDiagnosticTest}
+                          className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
                           <div className="text-2xl mb-2">🎯</div>
                           <div className="text-sm font-medium text-gray-900">진단 테스트</div>
-                          <div className="text-xs text-gray-500">실력 확인하기</div>
+                          <div className="text-xs text-gray-500">다음 회차 진행</div>
                         </button>
-                        <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <button 
+                          onClick={() => handleFeatureClick('analysis')}
+                          className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
                           <div className="text-2xl mb-2">📊</div>
                           <div className="text-sm font-medium text-gray-900">학습 분석</div>
-                          <div className="text-xs text-gray-500">성과 리포트 보기</div>
+                          <div className="text-xs text-gray-500">진단테스트 이력 보기</div>
                         </button>
                       </div>
                     </div>

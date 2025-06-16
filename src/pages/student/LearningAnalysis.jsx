@@ -1,658 +1,155 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import apiClient from '../../services/api';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  RadialLinearScale,
-  BarElement,
-  ArcElement
-} from 'chart.js';
-import { Line, Radar, Bar, Doughnut } from 'react-chartjs-2';
 
-// Chart.js 구성 요소 등록
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  RadialLinearScale,
-  BarElement,
-  ArcElement
-);
-
+/**
+ * 🎯 학습분석 페이지 - 진단테스트 이력 관리
+ * 1차~10차 진단테스트 결과를 모두 표시하고 분석
+ */
 const LearningAnalysis = () => {
-  const [analysisData, setAnalysisData] = useState(null);
+  const [diagnosticHistory, setDiagnosticHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  // URL에서 testSessionId 추출
-  const getTestSessionId = () => {
-    const pathParts = location.pathname.split('/');
-    const testIdFromPath = pathParts[pathParts.length - 1];
-    return location.state?.testSessionId || testIdFromPath;
-  };
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [analysisData, setAnalysisData] = useState(null);
+  const [progressSummary, setProgressSummary] = useState(null);
+  const [hasCompletedDiagnostic, setHasCompletedDiagnostic] = useState(false);
 
+  // 진단테스트 이력 로딩
   useEffect(() => {
-    fetchDetailedAnalysis();
+    loadDiagnosticHistory();
   }, []);
 
-  const fetchDetailedAnalysis = async () => {
+  const loadDiagnosticHistory = async () => {
     try {
       setLoading(true);
-      const testSessionId = getTestSessionId();
       
-      if (!testSessionId) {
-        throw new Error('테스트 세션 ID를 찾을 수 없습니다.');
+      // 🎯 진단테스트 완료 상태 확인
+      const statusResponse = await apiClient.get('/auth/diagnostic-test-status');
+      const diagnosticCompleted = statusResponse.data.data.diagnostic_test_completed;
+      setHasCompletedDiagnostic(diagnosticCompleted);
+      
+      if (!diagnosticCompleted) {
+        console.log('❌ 1차 진단테스트 미완료 - 학습분석 접근 불가');
+        setLoading(false);
+        return;
       }
-
-      console.log('Fetching detailed analysis for test session:', testSessionId);
-      const response = await apiClient.get(`/diagnosis/result/${testSessionId}/detailed`);
-      setAnalysisData(response.data);
-    } catch (err) {
-      console.error('상세 분석 조회 실패:', err);
-      setError(err.response?.data?.detail || err.message || '분석 데이터를 불러오는데 실패했습니다.');
+      
+      // 진단테스트 이력 로딩
+      const response = await apiClient.get('/diagnosis/sessions/history');
+      
+      setDiagnosticHistory(response.data.histories);
+      setProgressSummary(response.data.progress_summary);
+      
+      console.log('✅ 진단테스트 이력 로딩 완료:', response.data);
+    } catch (error) {
+      console.error('❌ 진단테스트 이력 로딩 실패:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}분 ${secs}초`;
+  // 특정 세션 상세 분석 로딩
+  const loadSessionAnalysis = async (sessionId) => {
+    try {
+      const response = await apiClient.get(`/diagnosis/sessions/${sessionId}/analysis`);
+      setAnalysisData(response.data);
+      setSelectedSession(sessionId);
+      
+      console.log('✅ 세션 분석 데이터 로딩:', response.data);
+    } catch (error) {
+      console.error('❌ 세션 분석 로딩 실패:', error);
+      alert('분석 데이터를 불러오는데 실패했습니다.');
+    }
   };
 
-  const getLevelColor = (level) => {
-    if (level >= 0.8) return 'text-green-600';
-    if (level >= 0.6) return 'text-blue-600';
-    if (level >= 0.4) return 'text-yellow-600';
-    return 'text-red-600';
+  // 상태별 색상 및 아이콘
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'completed':
+        return { color: 'text-green-600', bg: 'bg-green-50', icon: '✅', text: '완료' };
+      case 'in_progress':
+        return { color: 'text-yellow-600', bg: 'bg-yellow-50', icon: '⏳', text: '진행중' };
+      case 'abandoned':
+        return { color: 'text-gray-600', bg: 'bg-gray-50', icon: '❌', text: '중단' };
+      default:
+        return { color: 'text-gray-600', bg: 'bg-gray-50', icon: '❓', text: '알 수 없음' };
+    }
   };
 
-  const getMasteryColor = (mastery) => {
-    const colors = {
-      'expert': 'bg-green-100 text-green-800',
-      'proficient': 'bg-blue-100 text-blue-800',
-      'developing': 'bg-yellow-100 text-yellow-800',
-      'beginner': 'bg-red-100 text-red-800'
-    };
-    return colors[mastery] || 'bg-gray-100 text-gray-800';
+  // 점수별 등급
+  const getScoreGrade = (score) => {
+    if (score >= 90) return { grade: 'S', color: 'text-purple-600', bg: 'bg-purple-50' };
+    if (score >= 80) return { grade: 'A', color: 'text-blue-600', bg: 'bg-blue-50' };
+    if (score >= 70) return { grade: 'B', color: 'text-green-600', bg: 'bg-green-50' };
+    if (score >= 60) return { grade: 'C', color: 'text-yellow-600', bg: 'bg-yellow-50' };
+    return { grade: 'D', color: 'text-red-600', bg: 'bg-red-50' };
   };
 
-  const getMasteryLabel = (mastery) => {
-    const labels = {
-      'expert': '전문가',
-      'proficient': '숙련자',
-      'developing': '발전중',
-      'beginner': '초보자'
-    };
-    return labels[mastery] || '미분류';
-  };
-
-  const renderOverview = () => {
-    if (!analysisData) return null;
-    
-    const { basic_result, relative_position, click_pattern_analysis, time_pattern_analysis } = analysisData;
-    
-    return (
-      <div className="space-y-6">
-        {/* 종합 점수 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">학습 수준</h3>
-            <div className={`text-3xl font-bold ${getLevelColor(basic_result.learning_level)}`}>
-              {(basic_result.learning_level * 100).toFixed(1)}%
-            </div>
-            <div className="text-sm text-gray-500 mt-1">
-              등급: {relative_position?.level_grade}
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">정답률</h3>
-            <div className="text-3xl font-bold text-blue-600">
-              {(basic_result.accuracy_rate * 100).toFixed(1)}%
-            </div>
-            <div className="text-sm text-gray-500 mt-1">
-              {basic_result.correct_answers}/{basic_result.total_questions} 문제
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">상대적 위치</h3>
-            <div className="text-3xl font-bold text-purple-600">
-              {relative_position?.percentile}%
-            </div>
-            <div className="text-sm text-gray-500 mt-1">
-              상위 {(100 - relative_position?.percentile).toFixed(1)}%
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">총 소요시간</h3>
-            <div className="text-3xl font-bold text-orange-600">
-              {formatTime(basic_result.total_time_spent)}
-            </div>
-            <div className="text-sm text-gray-500 mt-1">
-              평균 {Math.round(basic_result.total_time_spent / basic_result.total_questions)}초/문제
-            </div>
-          </div>
-        </div>
-
-        {/* 학습 패턴 분석 */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">학습 패턴 분석</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold text-gray-700 mb-3">응답 패턴</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>응답 스타일:</span>
-                  <span className={`font-semibold ${click_pattern_analysis?.response_pattern === 'careful' ? 'text-blue-600' : 'text-orange-600'}`}>
-                    {click_pattern_analysis?.response_pattern === 'careful' ? '신중형' : '즉흥형'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>평균 응답시간:</span>
-                  <span>{click_pattern_analysis?.avg_response_time}초</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>시간 일관성:</span>
-                  <span>{(click_pattern_analysis?.time_consistency * 100).toFixed(1)}%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-gray-700 mb-3">피로도 분석</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>피로도 감지:</span>
-                  <span className={`font-semibold ${time_pattern_analysis?.fatigue_indicator?.detected ? 'text-red-600' : 'text-green-600'}`}>
-                    {time_pattern_analysis?.fatigue_indicator?.detected ? '감지됨' : '정상'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>시간 트렌드:</span>
-                  <span>{time_pattern_analysis?.time_trend === 'consistent' ? '일정함' : 
-                         time_pattern_analysis?.time_trend === 'slowing_down' ? '느려짐' : '빨라짐'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderConceptAnalysis = () => {
-    if (!analysisData?.concept_understanding) return null;
-    
-    return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">개념별 이해도</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {Object.entries(analysisData.concept_understanding).map(([concept, data]) => (
-              <div key={concept} className="border rounded-lg p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-semibold text-gray-700">{concept}</h4>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getMasteryColor(data.mastery_level)}`}>
-                    {getMasteryLabel(data.mastery_level)}
-                  </span>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>이해도:</span>
-                    <span className="font-semibold">{(data.understanding_rate * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full" 
-                      style={{ width: `${data.understanding_rate * 100}%` }}
-                    ></div>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span>정답률:</span>
-                    <span>{(data.accuracy_rate * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>문제 수:</span>
-                    <span>{data.total_questions}개</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>평균 시간:</span>
-                    <span>{Math.round(data.avg_time)}초</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderQuestionLog = () => {
-    if (!analysisData?.question_analysis) return null;
-    
-    return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">문항별 상세 로그</h3>
-          <div className="space-y-4">
-            {analysisData.question_analysis.map((question, index) => (
-              <div key={question.question_id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-semibold text-gray-700">문제 {index + 1}</h4>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${question.is_correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {question.is_correct ? '정답' : '오답'}
-                    </span>
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                      난이도 {question.difficulty}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="text-sm text-gray-600 mb-3">
-                  {question.question_content}
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">영역:</span>
-                    <div className="text-gray-600">{question.subject_area}</div>
-                  </div>
-                  <div>
-                    <span className="font-medium">소요시간:</span>
-                    <div className="text-gray-600">{question.time_spent}초</div>
-                  </div>
-                  <div>
-                    <span className="font-medium">획득점수:</span>
-                    <div className="text-gray-600">{question.score.toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <span className="font-medium">개념태그:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {question.concept_tags?.map((tag, tagIndex) => (
-                        <span key={tagIndex} className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                {!question.is_correct && (
-                  <div className="mt-3 p-3 bg-red-50 rounded border">
-                    <div className="text-sm">
-                      <span className="font-medium text-red-700">정답: </span>
-                      <span className="text-red-600">{question.correct_answer}</span>
-                    </div>
-                    <div className="text-sm mt-1">
-                      <span className="font-medium text-red-700">내 답안: </span>
-                      <span className="text-red-600">{question.user_answer}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-      const renderVisualization = () => {
-        if (!analysisData?.visual_data) return null;
-        
-        const { learning_radar, performance_trend, knowledge_map } = analysisData.visual_data;
-        
-        // 레이더 차트 설정
-        const radarOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: '개념별 이해도 분석'
-                }
-            },
-            scales: {
-                r: {
-                    angleLines: {
-                        display: true
-                    },
-                    suggestedMin: 0,
-                    suggestedMax: 100
-                }
-            }
-        };
-
-        // 성과 트렌드 차트 설정
-        const trendOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: '문제 구간'
-                    }
-                },
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: '정답률 (%)'
-                    },
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: '소요시간 (초)'
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                },
-            },
-        };
-
-        // 개념별 이해도 도넛 차트 데이터
-        const conceptData = analysisData.concept_understanding ? Object.entries(analysisData.concept_understanding) : [];
-        const doughnutData = {
-            labels: conceptData.map(([concept]) => concept),
-            datasets: [
-                {
-                    data: conceptData.map(([_, data]) => data.understanding_rate * 100),
-                    backgroundColor: [
-                        '#FF6384',
-                        '#36A2EB',
-                        '#FFCE56',
-                        '#4BC0C0',
-                        '#9966FF',
-                        '#FF9F40',
-                        '#FF6384',
-                        '#C9CBCF'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }
-            ]
-        };
-
-        const doughnutOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                },
-                title: {
-                    display: true,
-                    text: '개념별 이해도 분포'
-                }
-            }
-        };
-        
-        return (
-            <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* 학습 레이더 차트 */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">학습 레이더 차트</h3>
-                        <div className="h-80">
-                            {learning_radar?.categories?.length > 0 ? (
-                                <Radar data={learning_radar} options={radarOptions} />
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-gray-500">
-                                    분석할 데이터가 충분하지 않습니다.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* 개념별 이해도 도넛 차트 */}
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">개념별 이해도 분포</h3>
-                        <div className="h-80">
-                            {conceptData.length > 0 ? (
-                                <Doughnut data={doughnutData} options={doughnutOptions} />
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-gray-500">
-                                    분석할 데이터가 충분하지 않습니다.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* 성과 트렌드 차트 */}
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">성과 트렌드 분석</h3>
-                    <div className="h-80">
-                        {performance_trend?.labels?.length > 0 ? (
-                            <Line data={performance_trend} options={trendOptions} />
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-gray-500">
-                                분석할 데이터가 충분하지 않습니다.
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* 지식 맵 */}
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">지식 맵</h3>
-                    {knowledge_map?.nodes?.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {knowledge_map.nodes.map((node, index) => (
-                                <div key={index} className="border rounded-lg p-4 text-center hover:shadow-lg transition-shadow">
-                                    <div 
-                                        className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-white font-bold text-lg shadow-lg"
-                                        style={{ backgroundColor: node.color }}
-                                    >
-                                        {Math.round(node.value)}
-                                    </div>
-                                    <div className="text-sm font-medium text-gray-800 mb-1">{node.label}</div>
-                                    <div className="text-xs text-gray-500 mb-2">{getMasteryLabel(node.mastery)}</div>
-                                    <div className="text-xs text-gray-400">
-                                        문제 {node.questions}개 | 정확도 {(node.accuracy * 100).toFixed(1)}%
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="h-32 flex items-center justify-center text-gray-500">
-                            분석할 데이터가 충분하지 않습니다.
-                        </div>
-                    )}
-                </div>
-
-                {/* 난이도별 성과 분석 */}
-                {analysisData.difficulty_performance && Object.keys(analysisData.difficulty_performance).length > 0 && (
-                    <div className="bg-white p-6 rounded-lg shadow-md">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">난이도별 성과 분석</h3>
-                        <div className="h-64">
-                            <Bar 
-                                data={{
-                                    labels: Object.keys(analysisData.difficulty_performance),
-                                    datasets: [
-                                        {
-                                            label: '정답률 (%)',
-                                            data: Object.values(analysisData.difficulty_performance).map(d => d.accuracy_rate * 100),
-                                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                                            borderColor: 'rgba(54, 162, 235, 1)',
-                                            borderWidth: 1
-                                        },
-                                        {
-                                            label: '평균 시간 (초)',
-                                            data: Object.values(analysisData.difficulty_performance).map(d => d.avg_time),
-                                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                                            borderColor: 'rgba(255, 99, 132, 1)',
-                                            borderWidth: 1,
-                                            yAxisID: 'y1'
-                                        }
-                                    ]
-                                }}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    scales: {
-                                        y: {
-                                            type: 'linear',
-                                            display: true,
-                                            position: 'left',
-                                            title: {
-                                                display: true,
-                                                text: '정답률 (%)'
-                                            },
-                                        },
-                                        y1: {
-                                            type: 'linear',
-                                            display: true,
-                                            position: 'right',
-                                            title: {
-                                                display: true,
-                                                text: '소요시간 (초)'
-                                            },
-                                            grid: {
-                                                drawOnChartArea: false,
-                                            },
-                                        },
-                                    },
-                                }}
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-  const renderPeerComparison = () => {
-    if (!analysisData?.relative_position?.peer_comparison) return null;
-    
-    const peer = analysisData.relative_position.peer_comparison;
-    
-    return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">동료 비교 분석</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-700">정확도 비교</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>내 정확도:</span>
-                  <span className="font-semibold">{(peer.your_accuracy * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>동료 평균:</span>
-                  <span>{(peer.peer_avg_accuracy * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>비교 결과:</span>
-                  <span className={`font-semibold ${peer.accuracy_compared_to_peers === 'above' ? 'text-green-600' : 'text-red-600'}`}>
-                    {peer.accuracy_compared_to_peers === 'above' ? '평균 이상' : '평균 이하'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-700">시간 비교</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>내 소요시간:</span>
-                  <span className="font-semibold">{formatTime(peer.your_time)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>동료 평균:</span>
-                  <span>{formatTime(Math.round(peer.peer_avg_time))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>비교 결과:</span>
-                  <span className={`font-semibold ${peer.time_compared_to_peers === 'faster' ? 'text-green-600' : 'text-orange-600'}`}>
-                    {peer.time_compared_to_peers === 'faster' ? '더 빠름' : '더 느림'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-4 bg-blue-50 rounded border">
-            <div className="text-sm text-blue-700">
-              <strong>동료 그룹:</strong> 비슷한 수준의 학습자 {peer.similar_peers}명과 비교한 결과입니다.
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // 시간 포맷팅
+  const formatTime = (ms) => {
+    if (!ms) return '-';
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}분 ${seconds}초`;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">상세 분석 데이터를 불러오는 중...</p>
+          <div className="text-6xl mb-4">📊</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">학습분석 로딩 중...</h2>
+          <p className="text-gray-600">진단테스트 이력을 불러오고 있습니다.</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  // 🎯 진단테스트 미완료 시 안내 화면
+  if (!loading && !hasCompletedDiagnostic) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">⚠️ 오류 발생</div>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <div className="space-x-4">
-            <button 
-              onClick={fetchDetailedAnalysis}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              다시 시도
-            </button>
-            <button 
-              onClick={() => navigate('/student/dashboard')}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              대시보드로 돌아가기
-            </button>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">🚫</div>
+              <h1 className="text-4xl font-bold mb-4 text-gray-800">학습분석 이용 불가</h1>
+              <p className="text-xl text-gray-600">1차 진단테스트를 먼저 완료해주세요</p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <div className="text-6xl mb-6">🎯</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                진단테스트가 필요합니다
+              </h2>
+              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                학습분석 기능을 이용하려면 먼저 <span className="font-bold text-blue-600">1차 진단테스트</span>를 완료해야 합니다.<br/>
+                진단테스트를 통해 현재 학습 수준을 파악한 후, 상세한 학습분석을 제공해드립니다.
+              </p>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">📋 진단테스트 완료 후 이용 가능한 기능</h3>
+                <ul className="text-left text-blue-800 space-y-2 max-w-md mx-auto">
+                  <li>• 📊 진단테스트 이력 및 성장 분석</li>
+                  <li>• 🎯 회차별 성과 비교</li>
+                  <li>• 🤖 에디의 개인화된 학습 분석</li>
+                  <li>• 📈 약점 영역 및 개선 방향 제시</li>
+                  <li>• 👥 동료들과의 성과 비교</li>
+                </ul>
+              </div>
+
+              <div className="space-y-4">
+                <button
+                  onClick={() => window.location.href = '/diagnosis'}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg"
+                >
+                  🚀 1차 진단테스트 시작하기
+                </button>
+                
+                <div className="text-sm text-gray-500">
+                  진단테스트 완료 후 자동으로 학습분석을 이용하실 수 있습니다.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -660,54 +157,294 @@ const LearningAnalysis = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">학습 분석 리포트</h1>
-          <p className="text-gray-600 mt-2">진단테스트 결과에 대한 상세한 분석입니다</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          
+          {/* 헤더 */}
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">📊</div>
+            <h1 className="text-4xl font-bold mb-4 text-gray-800">학습분석</h1>
+            <p className="text-xl text-gray-600">진단테스트 이력 및 성장 분석</p>
+          </div>
 
-        {/* 탭 네비게이션 */}
-        <div className="mb-6">
-          <nav className="flex space-x-8">
-            {[
-              { id: 'overview', label: '종합 분석' },
-              { id: 'concepts', label: '개념별 이해도' },
-              { id: 'questions', label: '문항별 로그' },
-              { id: 'visual', label: '시각화' },
-              { id: 'comparison', label: '동료 비교' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+          {/* 진행 상황 요약 */}
+          {progressSummary && (
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">📈 진단테스트 진행 현황</h2>
+              
+              <div className="grid md:grid-cols-4 gap-6 mb-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    {progressSummary.total_completed}차
+                  </div>
+                  <p className="text-gray-600">완료된 진단테스트</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {progressSummary.completion_percentage?.toFixed(0)}%
+                  </div>
+                  <p className="text-gray-600">전체 진행률</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600 mb-2">
+                    {progressSummary.latest_score?.toFixed(0) || '-'}점
+                  </div>
+                  <p className="text-gray-600">최근 점수</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-600 mb-2">
+                    {progressSummary.average_score?.toFixed(0) || '-'}점
+                  </div>
+                  <p className="text-gray-600">평균 점수</p>
+                </div>
+              </div>
 
-        {/* 탭 컨텐츠 */}
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'concepts' && renderConceptAnalysis()}
-        {activeTab === 'questions' && renderQuestionLog()}
-        {activeTab === 'visual' && renderVisualization()}
-        {activeTab === 'comparison' && renderPeerComparison()}
+              {/* 진행률 바 */}
+              <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-green-500 h-4 rounded-full transition-all duration-300"
+                  style={{ width: `${progressSummary.completion_percentage}%` }}
+                ></div>
+              </div>
+              
+              <div className="text-center text-sm text-gray-600">
+                {progressSummary.total_completed} / 10차 완료 
+                {progressSummary.improvement_trend && (
+                  <span className="ml-4">
+                    📈 성장 추세: <span className="font-semibold">{progressSummary.improvement_trend}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
-        {/* 하단 액션 버튼 */}
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => navigate('/student/dashboard')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            대시보드로 돌아가기
-          </button>
+          {/* 진단테스트 이력 목록 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">🎯 진단테스트 이력</h2>
+            
+            {diagnosticHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📝</div>
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                  아직 완료된 진단테스트가 없습니다
+                </h3>
+                <p className="text-gray-500">
+                  첫 번째 진단테스트를 시작해보세요!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {diagnosticHistory.map((session) => {
+                  const statusDisplay = getStatusDisplay(session.status);
+                  const scoreGrade = session.total_score ? getScoreGrade(session.total_score) : null;
+                  
+                  return (
+                    <div 
+                      key={session.session_id}
+                      className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => session.status === 'completed' && loadSessionAnalysis(session.session_id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-3">
+                            <h3 className="text-xl font-bold text-gray-800">
+                              {session.round_number}차 진단테스트
+                            </h3>
+                            
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusDisplay.bg} ${statusDisplay.color}`}>
+                              {statusDisplay.icon} {statusDisplay.text}
+                            </span>
+                            
+                            {scoreGrade && (
+                              <span className={`px-3 py-1 rounded-full text-sm font-bold ${scoreGrade.bg} ${scoreGrade.color}`}>
+                                {scoreGrade.grade}등급
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="grid md:grid-cols-4 gap-4 text-sm text-gray-600">
+                            <div>
+                              <span className="font-medium">학과:</span> {session.department}
+                            </div>
+                            <div>
+                              <span className="font-medium">점수:</span> {session.total_score?.toFixed(0) || '-'}점
+                            </div>
+                            <div>
+                              <span className="font-medium">정답률:</span> {session.correct_answers || 0}/{session.total_questions}
+                            </div>
+                            <div>
+                              <span className="font-medium">소요시간:</span> {formatTime(session.total_time_ms)}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 text-sm text-gray-500">
+                            시작: {new Date(session.started_at).toLocaleString('ko-KR')}
+                            {session.completed_at && (
+                              <span className="ml-4">
+                                완료: {new Date(session.completed_at).toLocaleString('ko-KR')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          {session.ai_analysis_available && (
+                            <div className="text-sm text-blue-600 mb-2">
+                              🤖 에디 분석 가능
+                            </div>
+                          )}
+                          
+                          {session.status === 'completed' && (
+                            <div className="text-sm text-gray-500">
+                              클릭하여 상세 분석 보기 →
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* 완료율 바 */}
+                      <div className="mt-4">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              session.completion_rate === 100 ? 'bg-green-500' : 'bg-yellow-500'
+                            }`}
+                            style={{ width: `${session.completion_rate}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          진행률: {session.completion_rate}%
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 상세 분석 모달 */}
+          {selectedSession && analysisData && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      {analysisData.session_info.round_number}차 진단테스트 상세 분석
+                    </h2>
+                    <button
+                      onClick={() => setSelectedSession(null)}
+                      className="text-gray-500 hover:text-gray-700 text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* 기본 정보 */}
+                  <div className="grid md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-blue-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-blue-600 mb-1">
+                        {analysisData.session_info.total_score?.toFixed(0)}점
+                      </div>
+                      <p className="text-blue-800">총점</p>
+                    </div>
+                    
+                    <div className="bg-green-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-green-600 mb-1">
+                        {analysisData.session_info.correct_answers}/{analysisData.session_info.total_questions}
+                      </div>
+                      <p className="text-green-800">정답/총문제</p>
+                    </div>
+                    
+                    <div className="bg-purple-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-purple-600 mb-1">
+                        {formatTime(analysisData.session_info.total_time_ms)}
+                      </div>
+                      <p className="text-purple-800">소요시간</p>
+                    </div>
+                  </div>
+                  
+                  {/* AI 분석 결과 */}
+                  {analysisData.ai_analysis && (
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg mb-6">
+                      <h3 className="text-xl font-bold mb-4 text-gray-800">🤖 에디의 분석</h3>
+                      
+                      {/* 유형별 분석 */}
+                      {analysisData.ai_analysis.type_analysis && (
+                        <div className="mb-4">
+                          <h4 className="font-semibold mb-2">📊 유형별 정답률</h4>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {Object.entries(analysisData.ai_analysis.type_analysis).map(([type, score]) => (
+                              <div key={type} className="flex justify-between items-center">
+                                <span>{type}</span>
+                                <span className="font-bold">{score}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 추천사항 */}
+                      {analysisData.ai_analysis.recommendations && (
+                        <div>
+                          <h4 className="font-semibold mb-2">💡 에디의 추천사항</h4>
+                          <ul className="space-y-1">
+                            {analysisData.ai_analysis.recommendations.map((rec, index) => (
+                              <li key={index} className="text-sm text-gray-700">• {rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* 문제별 상세 결과 */}
+                  <div>
+                    <h3 className="text-xl font-bold mb-4 text-gray-800">📝 문제별 상세 결과</h3>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {analysisData.detailed_answers.map((answer) => (
+                        <div 
+                          key={answer.question_id}
+                          className={`p-3 rounded-lg border ${
+                            answer.is_correct 
+                              ? 'bg-green-50 border-green-200' 
+                              : 'bg-red-50 border-red-200'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">
+                              문제 {answer.question_number}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm px-2 py-1 rounded ${
+                                answer.is_correct 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {answer.is_correct ? '✅ 정답' : '❌ 오답'}
+                              </span>
+                              <span className="text-sm text-gray-600">
+                                {formatTime(answer.time_spent_ms)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-sm text-gray-600 mt-1">
+                            선택: {answer.selected_answer}번 | 정답: {answer.correct_answer}번
+                            {answer.domain && <span className="ml-2">| {answer.domain}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

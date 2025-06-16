@@ -357,7 +357,7 @@ const ProfessorDashboard = () => {
                         반 평균 점수
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        {dashboardData.class_average_score.toFixed(1)}점
+                        {(dashboardData.class_average_score || 0).toFixed(1)}점
                       </dd>
                     </dl>
                   </div>
@@ -426,14 +426,14 @@ const ProfessorDashboard = () => {
               <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">🚨 학습 위기 경고</h3>
-                  {dashboardData.warnings.length === 0 ? (
+                  {(dashboardData.warnings?.length || 0) === 0 ? (
                     <div className="text-center py-8">
                       <div className="text-gray-400 text-lg mb-2">✅</div>
                       <p className="text-gray-500 text-sm">현재 경고 사항이 없습니다.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {dashboardData.warnings.map((warning, index) => (
+                      {(dashboardData.warnings || []).map((warning, index) => (
                         <div key={index} className={`p-3 border rounded-lg ${
                           warning.severity === 'critical' ? 'bg-red-50 border-red-200' :
                           warning.severity === 'high' ? 'bg-yellow-50 border-yellow-200' :
@@ -478,7 +478,7 @@ const ProfessorDashboard = () => {
                       <div key={day} className="text-xs text-center text-gray-500 p-1">{day}</div>
                     ))}
                     {/* 히트맵 데이터 */}
-                    {dashboardData.activity_heatmap.map((activity, i) => (
+                    {(dashboardData.activity_heatmap || []).map((activity, i) => (
                       <div 
                         key={i} 
                         className={`h-8 rounded ${
@@ -536,13 +536,13 @@ const ProfessorDashboard = () => {
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">📋 최근 과제 제출</h3>
-                  {dashboardData.recent_submissions.length === 0 ? (
+                  {(dashboardData.recent_submissions?.length || 0) === 0 ? (
                     <div className="text-center py-4">
                       <p className="text-gray-500 text-sm">최근 제출물이 없습니다.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {dashboardData.recent_submissions.map((submission, index) => (
+                      {(dashboardData.recent_submissions || []).map((submission, index) => (
                         <div key={index} className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>

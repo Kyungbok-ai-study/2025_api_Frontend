@@ -741,7 +741,7 @@ const AssignmentManagement = () => {
                     <div className="flex justify-between">
                       <span className="text-sm text-blue-700">평균 점수:</span>
                       <span className="text-sm font-medium text-blue-900">
-                        {assignmentDetail.statistics.average_score.toFixed(1)}점
+                        {(assignmentDetail.statistics?.average_score || 0).toFixed(1)}점
                       </span>
                     </div>
                   </div>

@@ -7,6 +7,8 @@ import StudentDashboard from "./pages/student/Dashboard.jsx";
 import DiagnosticTest from "./pages/student/DiagnosticTest.jsx";
 import LearningAnalysis from "./pages/student/LearningAnalysis.jsx";
 import ProfessorDashboard from "./pages/professor/Dashboard.jsx";
+import MedicalDiagnosisSelector from "./pages/student/diagnostic/medical/MedicalDiagnosisSelector.jsx";
+import MedicalDiagnosisTest from "./pages/student/diagnostic/medical/MedicalDiagnosisTest.jsx";
 import AdminDashboard from "./pages/admin/Dashboard.jsx";
 import MyPage from "./pages/my/MyPage.jsx";
 // 회원가입 페이지들
@@ -27,6 +29,8 @@ import Analytics from "./pages/professor/Analytics.jsx";
 import StudentList from "./pages/professor/StudentList.jsx";
 import AssignmentManagement from "./pages/professor/AssignmentManagement.jsx";
 import ProblemGeneration from "./pages/professor/ProblemManagement.jsx";
+import MatchingTest from "./pages/professor/MatchingTest.jsx";
+import StudentAnalysis from "./pages/professor/StudentAnalysis.jsx";
 
 import "./App.css";
 
@@ -52,6 +56,8 @@ const App = () => {
         <Route path="/student/analysis" element={<ProtectedRoute><LearningAnalysis /></ProtectedRoute>} />
         <Route path="/student/diagnosis/:subject" element={<DiagnosticTest />} />
         <Route path="/student/diagnosis" element={<DiagnosticTest />} />
+        <Route path="/student/diagnostic/medical" element={<ProtectedRoute><MedicalDiagnosisSelector /></ProtectedRoute>} />
+        <Route path="/diagnosis/test/:department/:round" element={<ProtectedRoute><MedicalDiagnosisTest /></ProtectedRoute>} />
         <Route path="/student/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
         <Route path="/student/problems/:subject" element={<StudentDashboard />} />
         <Route path="/student/problems" element={<StudentDashboard />} />
@@ -81,6 +87,8 @@ const App = () => {
         <Route path="/professor/assignments/:assignmentId" element={<AssignmentManagement />} />
         <Route path="/professor/problems" element={<ProblemGeneration />} />
         <Route path="/professor/problems/:problemId" element={<ProblemGeneration />} />
+        <Route path="/professor/matching-test" element={<MatchingTest />} />
+        <Route path="/professor/students/:studentId/analysis" element={<StudentAnalysis />} />
 
         <Route path="/professor/upload" element={<ProfessorDashboard />} />
         <Route path="/professor/settings" element={<ProfessorDashboard />} />

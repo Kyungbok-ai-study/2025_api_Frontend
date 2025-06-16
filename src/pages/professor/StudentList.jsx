@@ -43,18 +43,18 @@ const StudentList = () => {
     // 검색어 필터
     if (searchTerm.trim()) {
       filtered = filtered.filter(student => 
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (student.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (student.user_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (student.email || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // 경고 필터
     if (filterWarnings !== 'all') {
       if (filterWarnings === 'warning') {
-        filtered = filtered.filter(student => student.warning_count > 0);
+        filtered = filtered.filter(student => (student.warning_count || 0) > 0);
       } else if (filterWarnings === 'no_warning') {
-        filtered = filtered.filter(student => student.warning_count === 0);
+        filtered = filtered.filter(student => (student.warning_count || 0) === 0);
       }
     }
 
@@ -189,7 +189,7 @@ const StudentList = () => {
               <div className="p-5">
                 <div className="text-sm font-medium text-gray-500">정상 학생</div>
                 <div className="mt-1 text-2xl font-semibold text-green-600">
-                  {students.filter(s => s.warning_count === 0).length}명
+                  {students.filter(s => (s.warning_count || 0) === 0).length}명
                 </div>
               </div>
             </div>
@@ -197,7 +197,7 @@ const StudentList = () => {
               <div className="p-5">
                 <div className="text-sm font-medium text-gray-500">주의 학생</div>
                 <div className="mt-1 text-2xl font-semibold text-yellow-600">
-                  {students.filter(s => s.warning_count > 0 && s.warning_count <= 2).length}명
+                  {students.filter(s => (s.warning_count || 0) > 0 && (s.warning_count || 0) <= 2).length}명
                 </div>
               </div>
             </div>
@@ -205,7 +205,7 @@ const StudentList = () => {
               <div className="p-5">
                 <div className="text-sm font-medium text-gray-500">위험 학생</div>
                 <div className="mt-1 text-2xl font-semibold text-red-600">
-                  {students.filter(s => s.warning_count > 2).length}명
+                  {students.filter(s => (s.warning_count || 0) > 2).length}명
                 </div>
               </div>
             </div>
@@ -268,20 +268,20 @@ const StudentList = () => {
                           <div className="flex-shrink-0">
                             <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
                               <span className="text-sm font-medium text-red-600">
-                                {student.name.charAt(0)}
+                                {student.name?.charAt(0) || '?'}
                               </span>
                             </div>
                           </div>
                           <div>
-                            <h4 className="text-lg font-medium text-gray-900">{student.name}</h4>
+                            <h4 className="text-lg font-medium text-gray-900">{student.name || '이름 없음'}</h4>
                             <div className="flex items-center space-x-2 text-sm text-gray-500">
-                              <span>📚 {student.user_id}</span>
-                              <span>✉️ {student.email}</span>
+                              <span>📚 {student.user_id || '학번 없음'}</span>
+                              <span>✉️ {student.email || '이메일 없음'}</span>
                             </div>
                           </div>
                         </div>
                         <div className="mt-2 flex items-center space-x-4">
-                          {getWarningBadge(student.warning_count)}
+                          {getWarningBadge(student.warning_count || 0)}
                           {getActivityStatus(student.last_activity)}
                           {student.last_activity && (
                             <span className="text-xs text-gray-400">
@@ -297,7 +297,7 @@ const StudentList = () => {
                         >
                           상세보기
                         </button>
-                        {student.warning_count > 0 && (
+                        {(student.warning_count || 0) > 0 && (
                           <button className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600">
                             경고 관리
                           </button>
@@ -336,13 +336,13 @@ const StudentList = () => {
                   <div className="flex items-center space-x-4 mb-6">
                     <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
                       <span className="text-xl font-medium text-red-600">
-                        {selectedStudent.name.charAt(0)}
+                        {selectedStudent.name?.charAt(0) || '?'}
                       </span>
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{selectedStudent.name}</h3>
-                      <p className="text-gray-600">@{selectedStudent.user_id}</p>
-                      <p className="text-gray-600">{selectedStudent.email}</p>
+                      <h3 className="text-xl font-semibold text-gray-900">{selectedStudent.name || '이름 없음'}</h3>
+                      <p className="text-gray-600">@{selectedStudent.user_id || '학번 없음'}</p>
+                      <p className="text-gray-600">{selectedStudent.email || '이메일 없음'}</p>
                     </div>
                   </div>
 
@@ -361,7 +361,7 @@ const StudentList = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <span className="text-sm font-medium text-gray-500">경고 수: </span>
-                        {getWarningBadge(selectedStudent.warning_count)}
+                        {getWarningBadge(selectedStudent.warning_count || 0)}
                       </div>
                       <div>
                         <span className="text-sm font-medium text-gray-500">활동 상태: </span>
@@ -390,11 +390,11 @@ const StudentList = () => {
                     <div className="flex justify-between">
                       <span className="text-sm text-yellow-700">총 경고:</span>
                       <span className="text-sm font-medium text-yellow-900">
-                        {selectedStudent.warning_count}건
+                        {selectedStudent.warning_count || 0}건
                       </span>
                     </div>
                     <div className="text-xs text-yellow-600">
-                      {selectedStudent.warning_count > 0 
+                      {(selectedStudent.warning_count || 0) > 0 
                         ? '상담 및 관리가 필요합니다.' 
                         : '양호한 상태입니다.'
                       }

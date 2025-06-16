@@ -66,12 +66,41 @@ export const campusOnApi = {
   logout: () => 
     apiClient.post('/auth/logout'),
 
-  // 진단 테스트
+  // 진단 테스트 (기존)
   getDiagnosisTest: () => 
     apiClient.get('/diagnosis/multi-choice/sample'),
   
   submitDiagnosisTest: (data) => 
     apiClient.post('/diagnosis/submit', data),
+
+  // 학과별 진단테스트 (새로운 API)
+  // 사용자의 학과에 맞는 진단테스트 목록 조회
+  getMyAvailableTests: () =>
+    apiClient.get('/diagnosis/v1/my-tests'),
+  
+  // 추천 진단테스트 조회
+  getRecommendedTests: () =>
+    apiClient.get('/diagnosis/v1/recommended'),
+  
+  // 특정 학과의 진단테스트 목록 조회
+  getDepartmentTests: (department) =>
+    apiClient.get(`/diagnosis/v1/departments/${encodeURIComponent(department)}`),
+  
+  // 진단테스트 시작
+  startDiagnosisTest: (testId) =>
+    apiClient.post(`/diagnosis/v1/tests/${testId}/start`),
+  
+  // 진단 세션 정보 조회
+  getDiagnosisSession: (sessionId) =>
+    apiClient.get(`/diagnosis/v1/sessions/${sessionId}`),
+  
+  // 진단테스트 히스토리 조회
+  getMyDiagnosisHistory: (params = {}) =>
+    apiClient.get('/diagnosis/v1/my-history', { params }),
+  
+  // 개인 성과 분석 조회
+  getMyPerformanceAnalysis: (days = 30) =>
+    apiClient.get(`/diagnosis/v1/my-performance?days=${days}`),
 
   // 대시보드
   getDashboard: () => 

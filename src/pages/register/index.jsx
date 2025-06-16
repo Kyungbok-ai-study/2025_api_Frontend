@@ -37,9 +37,17 @@ const RegisterStep1 = () => {
   useEffect(() => {
     const loadPopularSchools = async () => {
       try {
+        console.log('[API] 인기 학교 목록 요청 시작');
+        console.log('[API] API Base URL:', apiClient.defaults.baseURL);
+        
         const response = await apiClient.get('/schools/popular');
+        console.log('[API] 인기 학교 목록 응답:', response);
+        
         if (response.data.success) {
           setPopularSchools(response.data.data);
+          console.log('[API] 인기 학교 목록 로드 성공:', response.data.data.length, '개');
+        } else {
+          console.warn('[API] 인기 학교 목록 응답 실패');
         }
       } catch (error) {
         console.error('인기 학교 로드 실패:', error);
@@ -47,8 +55,15 @@ const RegisterStep1 = () => {
           message: error.message,
           code: error.code,
           config: error.config,
-          response: error.response
+          response: error.response,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL
         });
+        
+        // 네트워크 에러인 경우 사용자에게 알림
+        if (error.code === 'ERR_NETWORK' || !error.response) {
+          console.error('[API] 서버 연결 실패 - 백엔드 서버가 실행 중인지 확인하세요');
+        }
       }
     };
 
@@ -155,8 +170,18 @@ const RegisterStep1 = () => {
         message: error.message,
         code: error.code,
         config: error.config,
-        response: error.response
+        response: error.response,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL
       });
+      
+      // 네트워크 에러인 경우 사용자에게 알림
+      if (error.code === 'ERR_NETWORK' || !error.response) {
+        alert('서버와의 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      } else if (error.response?.status === 404) {
+        console.error('[API] 학교 검색 API 엔드포인트를 찾을 수 없습니다');
+      }
+      
       setSearchResults([]);
     } finally {
       setSearchLoading(false);

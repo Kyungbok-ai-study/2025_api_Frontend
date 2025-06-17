@@ -9,8 +9,8 @@ const getApiBaseUrl = () => {
     return 'http://localhost:8000/api';
   }
   
-  // 프로덕션 환경
-  return `${window.location.protocol}//${hostname}/api`;
+  // 프로덕션 환경 - 상대 경로 사용 (Nginx 프록시를 통해 백엔드로 전달)
+  return '/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

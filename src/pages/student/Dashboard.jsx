@@ -354,95 +354,114 @@ const StudentDashboard = () => {
               </div>
 
               {/* 핵심 지표 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">📊</span>
+              {dashboardData ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">📊</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
-                            현재 학습 수준
-                          </dt>
-                          <dd className="text-lg font-medium text-gray-900">
-                            {Math.round(dashboardData.current_level * 100)}%
-                          </dd>
-                        </dl>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">
+                              현재 학습 수준
+                            </dt>
+                            <dd className="text-lg font-medium text-gray-900">
+                              {Math.round((dashboardData?.current_level || 0) * 100)}%
+                            </dd>
+                          </dl>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">✅</span>
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">✅</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
-                            해결한 문제
-                          </dt>
-                          <dd className="text-lg font-medium text-gray-900">
-                            {dashboardData.total_problems_solved}개
-                          </dd>
-                        </dl>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">
+                              해결한 문제
+                            </dt>
+                            <dd className="text-lg font-medium text-gray-900">
+                              {dashboardData?.total_problems_solved || 0}개
+                            </dd>
+                          </dl>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">🔥</span>
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">🔥</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
-                            연속 학습
-                          </dt>
-                          <dd className="text-lg font-medium text-gray-900">
-                            {dashboardData.current_streak}일
-                          </dd>
-                        </dl>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">
+                              연속 학습
+                            </dt>
+                            <dd className="text-lg font-medium text-gray-900">
+                              {dashboardData?.current_streak || 0}일
+                            </dd>
+                          </dl>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">📈</span>
+                  <div className="bg-white overflow-hidden shadow rounded-lg">
+                    <div className="p-5">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">📈</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt className="text-sm font-medium text-gray-500 truncate">
-                            변화량
-                          </dt>
-                          <dd className="text-lg font-medium text-gray-900">
-                            {dashboardData.level_change > 0 ? '+' : ''}{Math.round(dashboardData.level_change * 100)}%
-                          </dd>
-                        </dl>
+                        <div className="ml-5 w-0 flex-1">
+                          <dl>
+                            <dt className="text-sm font-medium text-gray-500 truncate">
+                              변화량
+                            </dt>
+                            <dd className="text-lg font-medium text-gray-900">
+                              {(dashboardData?.level_change || 0) > 0 ? '+' : ''}{Math.round((dashboardData?.level_change || 0) * 100)}%
+                            </dd>
+                          </dl>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+                  <div className="px-4 py-5 sm:p-6 text-center">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      아직 학습 데이터가 없습니다
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      진단 테스트를 완료하면 개인 맞춤 학습 분석을 제공합니다.
+                    </p>
+                    <button 
+                      onClick={handleStartDiagnosticTest}
+                      className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      진단 테스트 시작하기
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* 빠른 액션 */}
@@ -484,28 +503,35 @@ const StudentDashboard = () => {
                     <div className="px-4 py-5 sm:p-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">최근 학습 활동</h3>
                       <div className="space-y-3">
-                        {dashboardData.recent_activities.map((activity, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <span className="text-blue-600 text-sm">
-                                    {activity.type === 'test' ? '📝' : activity.type === 'problem' ? '💡' : '🎯'}
-                                  </span>
+                        {dashboardData?.recent_activities?.length > 0 ? (
+                          dashboardData.recent_activities.map((activity, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0">
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span className="text-blue-600 text-sm">
+                                      {activity.type === 'test' ? '📝' : activity.type === 'problem' ? '💡' : '🎯'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="ml-3">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {activity.subject} {activity.type === 'test' ? '테스트' : activity.type === 'problem' ? '문제 풀이' : '진단'}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {activity.score ? `점수: ${activity.score}점` : `${activity.count}문제 해결`}
+                                  </p>
                                 </div>
                               </div>
-                              <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-900">
-                                  {activity.subject} {activity.type === 'test' ? '테스트' : activity.type === 'problem' ? '문제 풀이' : '진단'}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {activity.score ? `점수: ${activity.score}점` : `${activity.count}문제 해결`}
-                                </p>
-                              </div>
+                              <span className="text-xs text-gray-400">{activity.date}</span>
                             </div>
-                            <span className="text-xs text-gray-400">{activity.date}</span>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-gray-500">
+                            <p>아직 학습 활동이 없습니다.</p>
+                            <p className="text-sm">진단 테스트를 시작해보세요!</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </div>
@@ -518,20 +544,26 @@ const StudentDashboard = () => {
                     <div className="px-4 py-5 sm:p-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">다가오는 일정</h3>
                       <div className="space-y-3">
-                        {dashboardData.upcoming_deadlines.map((deadline, index) => (
-                          <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
-                                <span className="text-yellow-600">⏰</span>
-                              </div>
-                              <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-900">{deadline.title}</p>
-                                <p className="text-xs text-gray-500">{deadline.subject}</p>
-                                <p className="text-xs text-yellow-700">{deadline.date}</p>
+                        {dashboardData?.upcoming_deadlines?.length > 0 ? (
+                          dashboardData.upcoming_deadlines.map((deadline, index) => (
+                            <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0">
+                                  <span className="text-yellow-600">⏰</span>
+                                </div>
+                                <div className="ml-3">
+                                  <p className="text-sm font-medium text-gray-900">{deadline.title}</p>
+                                  <p className="text-xs text-gray-500">{deadline.subject}</p>
+                                  <p className="text-xs text-yellow-700">{deadline.date}</p>
+                                </div>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-gray-500">
+                            <p>다가오는 일정이 없습니다.</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </div>

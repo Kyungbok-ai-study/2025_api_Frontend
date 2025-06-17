@@ -115,7 +115,7 @@ const Dashboard = () => {
                           현재 학습 수준
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          {Math.round(dashboardData.current_level * 100)}%
+                          {Math.round((dashboardData?.current_level || 0) * 100)}%
                         </dd>
                       </dl>
                     </div>
@@ -138,7 +138,7 @@ const Dashboard = () => {
                           해결한 문제
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          {dashboardData.total_problems_solved}개
+                          {dashboardData?.total_problems_solved || 0}개
                         </dd>
                       </dl>
                     </div>
@@ -161,7 +161,7 @@ const Dashboard = () => {
                           연속 학습
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          {dashboardData.current_streak}일
+                          {dashboardData?.current_streak || 0}일
                         </dd>
                       </dl>
                     </div>
@@ -184,7 +184,7 @@ const Dashboard = () => {
                           변화량
                         </dt>
                         <dd className="text-lg font-medium text-gray-900">
-                          {dashboardData.level_change > 0 ? '+' : ''}{Math.round(dashboardData.level_change * 100)}%
+                          {(dashboardData?.level_change || 0) > 0 ? '+' : ''}{Math.round((dashboardData?.level_change || 0) * 100)}%
                         </dd>
                       </dl>
                     </div>

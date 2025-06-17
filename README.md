@@ -76,3 +76,20 @@
 ### 개발 도구
 ![Visual Studio Code](https://img.shields.io/badge/Visual_Studio_Code-007ACC?style=flat-square&logo=visual-studio-code&logoColor=ffffff)
 ![Cursor-Compatible](https://custom-icon-badges.demolab.com/badge/Cursor-000000?logo=cursor-ai-white)
+
+---
+
+## 🔧 환경 설정
+
+### 개발 환경
+개발 환경에서는 기본적으로 `http://localhost:8000`을 API 서버로 사용합니다.
+
+### 프로덕션 환경
+프로덕션 배포 시 `.env.production` 파일을 생성하고 다음 내용을 추가하세요:
+
+```bash
+# .env.production
+VITE_API_URL=https://www.kbu-ai-tutor.kr
+```
+
+이 환경변수는 프로필 이미지 URL 생성 등에 사용됩니다.

@@ -63,13 +63,13 @@ sudo systemctl status nginx
 # .env.production 파일 생성
 cat > .env.production << EOF
 # 프로덕션 환경 설정
-VITE_API_BASE_URL=https://kbu-ai-tutor.kr/api
+VITE_API_URL=https://www.kbu-ai-tutor.kr
 VITE_APP_ENV=production
 EOF
 ```
 
-참고: 현재는 환경변수를 사용하지 않고 동적으로 API URL을 설정하도록 구현되어 있으므로, 
-이 파일이 없어도 정상 작동합니다.
+**중요**: 이제 프로필 이미지 URL 생성 시 환경변수 `VITE_API_URL`을 사용하도록 변경되었으므로,
+반드시 이 파일을 생성해야 합니다.
 
 ## 배포 절차
 

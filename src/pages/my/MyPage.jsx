@@ -119,15 +119,14 @@ const MyPage = () => {
     if (!user.profile_image_url) return null;
     
     const timestamp = Date.now();
-    const hostname = window.location.hostname;
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     
-    // 개발 환경
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return `http://localhost:8000${user.profile_image_url}?t=${timestamp}`;
-    }
+    // API URL과 이미지 경로 결합 (슬래시 중복 방지)
+    const imageUrl = user.profile_image_url.startsWith('/') 
+      ? `${apiUrl}${user.profile_image_url}`
+      : `${apiUrl}/${user.profile_image_url}`;
     
-    // 프로덕션 환경
-    return `${window.location.protocol}//${hostname}${user.profile_image_url}?t=${timestamp}`;
+    return `${imageUrl}?t=${timestamp}`;
   };
 
   const getRoleText = (role) => {

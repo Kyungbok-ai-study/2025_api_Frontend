@@ -1,23 +1,8 @@
 import axios from 'axios';
 
-// 환경에 따른 API Base URL 설정
-const getApiBaseUrl = (): string => {
-  const hostname = window.location.hostname;
-  
-  // 개발 환경 (localhost)
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8000/api';
-  }
-  
-  // 프로덕션 환경
-  return `${window.location.protocol}//${hostname}/api`;
-};
-
-const API_BASE_URL = getApiBaseUrl();
-
 // API 클라이언트 설정
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: "/api",
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

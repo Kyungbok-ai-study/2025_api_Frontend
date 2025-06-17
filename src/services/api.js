@@ -1,23 +1,8 @@
 import axios from 'axios';
 
-// 환경에 따른 API Base URL 설정
-const getApiBaseUrl = () => {
-  const hostname = window.location.hostname;
-  
-  // 개발 환경 (localhost)
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8000/api';
-  }
-  
-  // 프로덕션 환경 - 상대 경로 사용 (Nginx 프록시를 통해 백엔드로 전달)
-  return '/api';
-};
-
-const API_BASE_URL = getApiBaseUrl();
-
 // 일반 API 클라이언트 설정
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: "/api",
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -26,7 +11,7 @@ const apiClient = axios.create({
 
 // 파일 업로드용 API 클라이언트 (타임아웃 연장)
 const fileUploadApiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: "/api",
   timeout: 300000, // 5분 (300초)
   headers: {
     'Content-Type': 'multipart/form-data',

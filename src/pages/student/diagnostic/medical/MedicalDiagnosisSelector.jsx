@@ -204,6 +204,11 @@ const MedicalDiagnosisSelector = ({ userDepartment }) => {
     return { label: '미흡', color: 'red' };
   };
 
+  // 분석 결과 보기
+  const viewAnalysisResult = () => {
+    navigate(`/student/diagnosis/analysis/${selectedDepartment}`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
@@ -450,89 +455,72 @@ const MedicalDiagnosisSelector = ({ userDepartment }) => {
 
       {/* 테스트 완료 결과 모달 */}
       {showResultModal && testResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
             <div className="text-center">
-              
-              {/* 결과 아이콘 */}
               <div className="text-6xl mb-4">
-                {testResult.score >= 80 ? '🎉' : testResult.score >= 60 ? '👏' : '💪'}
+                {testResult.level === '우수' ? '🎉' : 
+                 testResult.level === '양호' ? '👏' : 
+                 testResult.level === '보통' ? '💪' : '📚'}
               </div>
               
-              {/* 제목 */}
-              <h2 className="text-2xl font-bold mb-2">
-                {testResult.department} {testResult.round}차 테스트 완료!
-              </h2>
+              <h3 className="text-2xl font-bold mb-2">
+                {testResult.department} {testResult.round}차 완료!
+              </h3>
               
-              {/* 점수 및 레벨 */}
-              <div className="mb-6">
-                <div className="text-4xl font-bold text-blue-600 mb-2">
-                  {Math.round(testResult.score)}점
-                </div>
-                <div className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${
-                  testResult.level === '우수' ? 'bg-purple-100 text-purple-800' :
-                  testResult.level === '상급' ? 'bg-blue-100 text-blue-800' :
-                  testResult.level === '중급' ? 'bg-green-100 text-green-800' :
-                  testResult.level === '하급' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {testResult.level} 수준
-                </div>
+              <div className="text-3xl font-bold text-blue-600 mb-2">
+                {testResult.score}점
               </div>
               
-              {/* 상세 결과 */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">정답률:</span>
-                    <span className="font-medium ml-2">
-                      {testResult.correctCount}/{testResult.totalQuestions}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">소요시간:</span>
-                    <span className="font-medium ml-2">
-                      {Math.floor(testResult.timeSpent / 60)}분 {testResult.timeSpent % 60}초
-                    </span>
-                  </div>
+              <div className="text-lg text-gray-600 mb-4">
+                {testResult.level} 수준
+              </div>
+              
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm">
+                <div className="flex justify-between mb-2">
+                  <span>정답 수:</span>
+                  <span className="font-medium">{testResult.correctCount}/{testResult.totalQuestions}</span>
                 </div>
-                
+                <div className="flex justify-between mb-2">
+                  <span>소요 시간:</span>
+                  <span className="font-medium">{Math.round(testResult.timeSpent / 60)}분</span>
+                </div>
                 {testResult.isAutoSubmit && (
-                  <div className="mt-2 text-orange-600 text-xs">
-                    ⚠️ 시간 초과로 자동 제출되었습니다.
+                  <div className="text-orange-600 text-xs mt-2">
+                    ⏰ 시간 초과로 자동 제출되었습니다
                   </div>
                 )}
               </div>
               
-              {/* 다음 단계 안내 */}
-              {testResult.nextRound && testResult.nextRound <= 10 && (
-                <div className="bg-green-50 rounded-lg p-4 mb-6">
-                  <div className="text-green-800 font-medium">🎯 다음 단계</div>
-                  <div className="text-green-700 text-sm mt-1">
-                    {testResult.nextRound}차 진단테스트가 해제되었습니다!
-                  </div>
-                </div>
-              )}
-              
-              {testResult.nextRound > 10 && (
-                <div className="bg-purple-50 rounded-lg p-4 mb-6">
-                  <div className="text-purple-800 font-medium">🏆 축하합니다!</div>
-                  <div className="text-purple-700 text-sm mt-1">
-                    모든 차수의 진단테스트를 완료했습니다!
-                  </div>
-                </div>
-              )}
-              
-              {/* 확인 버튼 */}
-              <button
-                onClick={() => {
-                  setShowResultModal(false);
-                  setTestResult(null);
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-              >
-                확인
-              </button>
+              <div className="space-y-3">
+                {/* 분석 결과 보기 버튼 */}
+                <button
+                  onClick={viewAnalysisResult}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  📊 상세 분석 결과 보기
+                </button>
+                
+                {/* 다음 차수 버튼 */}
+                {testResult.nextRound && (
+                  <button
+                    onClick={() => {
+                      setShowResultModal(false);
+                      setSelectedRound(testResult.nextRound);
+                    }}
+                    className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium"
+                  >
+                    🚀 {testResult.nextRound}차 진단테스트 시작
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => setShowResultModal(false)}
+                  className="w-full bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 font-medium"
+                >
+                  닫기
+                </button>
+              </div>
             </div>
           </div>
         </div>

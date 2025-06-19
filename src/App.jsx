@@ -31,6 +31,7 @@ import AssignmentManagement from "./pages/professor/AssignmentManagement.jsx";
 import ProblemGeneration from "./pages/professor/ProblemManagement.jsx";
 import MatchingTest from "./pages/professor/MatchingTest.jsx";
 import StudentAnalysis from "./pages/professor/StudentAnalysis.jsx";
+import DiagnosisAnalysisResult from './pages/student/diagnostic/DiagnosisAnalysisResult';
 
 import "./App.css";
 
@@ -55,10 +56,11 @@ const App = () => {
         <Route path="/student/analysis/:testId" element={<ProtectedRoute><LearningAnalysis /></ProtectedRoute>} />
         <Route path="/student/analysis" element={<ProtectedRoute><LearningAnalysis /></ProtectedRoute>} />
         <Route path="/student/diagnosis/:subject" element={<DiagnosticTest />} />
-        <Route path="/student/diagnosis" element={<DiagnosticTest />} />
+        <Route path="/student/diagnosis" element={<ProtectedRoute role="student"><DiagnosticTest /></ProtectedRoute>} />
+        <Route path="/student/diagnosis/analysis/:department" element={<ProtectedRoute role="student"><DiagnosisAnalysisResult /></ProtectedRoute>} />
         <Route path="/student/diagnostic/medical" element={<ProtectedRoute><MedicalDiagnosisSelector /></ProtectedRoute>} />
         <Route path="/diagnosis/test/:department/:round" element={<ProtectedRoute><MedicalDiagnosisTest /></ProtectedRoute>} />
-        <Route path="/student/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+        <Route path="/student/dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />
         <Route path="/student/problems/:subject" element={<StudentDashboard />} />
         <Route path="/student/problems" element={<StudentDashboard />} />
         <Route path="/student/results/:testId" element={<StudentDashboard />} />
@@ -68,6 +70,7 @@ const App = () => {
         <Route path="/student/profile" element={<StudentDashboard />} />
         <Route path="/diagnosis" element={<DiagnosticTest />} />
         <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+        <Route path="/student/learning-analysis" element={<ProtectedRoute role="student"><LearningAnalysis /></ProtectedRoute>} />
           
         {/* 교수용 라우트들 */}
           <Route path="/professor" element={<ProfessorDashboard />} />

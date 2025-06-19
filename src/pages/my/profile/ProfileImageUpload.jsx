@@ -1,68 +1,32 @@
 import React, { useState, useRef } from 'react';
 import apiClient from '../../../services/api';
+import FileUploadDropzone from '../../../components/FileUploadDropzone';
 
 const ProfileImageUpload = ({ user, onImageUpdate, onClose }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef(null);
 
-  const handleFileSelect = (file) => {
-    if (!file) return;
-
-    // 파일 유효성 검사
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드 가능합니다.');
+  const handleFilesSelected = (validFiles, fileErrors) => {
+    if (fileErrors.length > 0) {
+      alert(fileErrors.join('\n'));
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB를 초과할 수 없습니다.');
-      return;
-    }
+    if (validFiles.length > 0) {
+      const file = validFiles[0]; // 이미지는 단일 파일만
+      setSelectedFile(file);
 
-    setSelectedFile(file);
-
-    // 미리보기 생성
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    handleFileSelect(file);
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDragIn = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
-  };
-
-  const handleDragOut = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+      // 미리보기 생성
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
+
+
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -200,29 +164,34 @@ const ProfileImageUpload = ({ user, onImageUpdate, onClose }) => {
           <div className="space-y-4">
             <h4 className="text-lg font-semibold text-gray-900">새 프로필 사진</h4>
             
-            {/* 드래그 앤 드롭 영역 */}
-            <div
-              className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer ${
-                dragActive 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-gray-300 hover:border-red-400 hover:bg-red-50'
-              }`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragEnter={handleDragIn}
-              onDragLeave={handleDragOut}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              {preview ? (
-                <div className="space-y-4">
-                  <img 
-                    src={preview} 
-                    alt="미리보기" 
-                    className="w-32 h-32 mx-auto rounded-full object-cover"
-                  />
+            {/* 파일 업로드 영역 */}
+            {preview ? (
+              <div className="space-y-4 p-8 border-2 border-dashed border-gray-300 rounded-xl">
+                <img 
+                  src={preview} 
+                  alt="미리보기" 
+                  className="w-32 h-32 mx-auto rounded-full object-cover"
+                />
+                <p className="text-sm text-gray-600">선택된 파일: {selectedFile?.name}</p>
+                <FileUploadDropzone
+                  onFilesSelected={handleFilesSelected}
+                  acceptedFormats={['.jpg', '.jpeg', '.png', '.gif']}
+                  maxFileSize={5 * 1024 * 1024} // 5MB
+                  multiple={false}
+                  disabled={uploading}
+                  className="mt-4"
+                >
                   <p className="text-sm text-gray-600">클릭하여 다른 파일 선택</p>
-                </div>
-              ) : (
+                </FileUploadDropzone>
+              </div>
+            ) : (
+              <FileUploadDropzone
+                onFilesSelected={handleFilesSelected}
+                acceptedFormats={['.jpg', '.jpeg', '.png', '.gif']}
+                maxFileSize={5 * 1024 * 1024} // 5MB
+                multiple={false}
+                disabled={uploading}
+              >
                 <div className="space-y-4">
                   <div className="w-16 h-16 mx-auto bg-gray-200 rounded-full flex items-center justify-center">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,16 +205,8 @@ const ProfileImageUpload = ({ user, onImageUpdate, onClose }) => {
                     </p>
                   </div>
                 </div>
-              )}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
+              </FileUploadDropzone>
+            )}
           </div>
         </div>
 

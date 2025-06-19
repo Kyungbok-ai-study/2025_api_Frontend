@@ -51,6 +51,7 @@ import {
   Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { experimentalStyled as styled } from '@mui/material/styles';
+import FileUploadDropzone from '../../components/FileUploadDropzone';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -100,6 +101,17 @@ const EnterpriseRAGDashboard = () => {
     extractImages: true,
     extractTables: true
   });
+
+  const handleFilesSelected = (validFiles, fileErrors) => {
+    if (fileErrors.length > 0) {
+      alert(fileErrors.join('\n'));
+      return;
+    }
+
+    if (validFiles.length > 0) {
+      setUploadFile(validFiles[0]); // 단일 파일만 선택
+    }
+  };
 
   useEffect(() => {
     loadInitialData();
@@ -494,24 +506,21 @@ const EnterpriseRAGDashboard = () => {
                   </Select>
                 </FormControl>
 
-                <input
-                  accept=".pdf"
-                  style={{ display: 'none' }}
-                  id="file-upload"
-                  type="file"
-                  onChange={(e) => setUploadFile(e.target.files[0])}
-                />
-                <label htmlFor="file-upload">
-                  <Button
-                    variant="outlined"
-                    component="span"
-                    startIcon={<UploadIcon />}
-                    fullWidth
-                    sx={{ mb: 2 }}
-                  >
-                    PDF 파일 선택
-                  </Button>
-                </label>
+                <FileUploadDropzone
+                  onFilesSelected={handleFilesSelected}
+                  acceptedFormats={['.pdf', '.xlsx', '.xls', '.txt']}
+                  maxFileSize={50 * 1024 * 1024} // 50MB
+                  multiple={false}
+                  disabled={loading}
+                >
+                  <UploadIcon sx={{ fontSize: 48, color: 'gray', mb: 2 }} />
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    파일을 드래그하여 업로드하거나 클릭하세요
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    PDF, Excel, 텍스트 파일만 가능 (최대 50MB)
+                  </Typography>
+                </FileUploadDropzone>
                 
                 {uploadFile && (
                   <Alert severity="success" sx={{ mb: 2 }}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import apiClient from '../../../../services/api';
+import ProgressBar from '../../../../components/ProgressBar';
 
 const MedicalDiagnosisSelector = ({ userDepartment }) => {
   const navigate = useNavigate();
@@ -304,20 +305,12 @@ const MedicalDiagnosisSelector = ({ userDepartment }) => {
                 </div>
 
                 {/* 진행률 바 */}
-                <div className="mt-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700">전체 진행률</span>
-                    <span className="text-sm font-medium text-gray-700">
-                      {Math.round(getProgressPercentage())}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${getProgressPercentage()}%` }}
-                    ></div>
-                  </div>
-                </div>
+                <ProgressBar
+                  percentage={getProgressPercentage()}
+                  label="전체 진행률"
+                  showPercentage={true}
+                  className="mt-6"
+                />
               </div>
 
               {/* 차수별 테스트 목록 */}

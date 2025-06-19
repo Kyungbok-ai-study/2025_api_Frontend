@@ -21,10 +21,14 @@ import {
   X,
   Trash2,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Table,
+  File
 } from 'lucide-react';
 import { questionReviewApi } from '../../services/questionReviewService.js';
 import apiClient from '../../services/api.js';
+import UploadProgressBar from '../../components/UploadProgressBar';
+import FileUploadDropzone from '../../components/FileUploadDropzone';
 
 // 문제 검토 카드 컴포넌트
 const QuestionReviewCard = ({ question, onApprove, onReject, onEdit }) => {
@@ -83,6 +87,7 @@ const RAGUpdate = () => {
   const [uploadResults, setUploadResults] = useState([]); // 다중 업로드 결과
   const [uploadError, setUploadError] = useState('');
   const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadMessages, setUploadMessages] = useState({}); // 파일별 진행 메시지
   const [ragStats, setRagStats] = useState(null);
   const [realTimeLearning, setRealTimeLearning] = useState(true);
   const [autoLearningLogs, setAutoLearningLogs] = useState([]);
@@ -224,39 +229,64 @@ const RAGUpdate = () => {
   };
 
   // 파일 드롭 핸들러 (다중 파일 지원)
-  const onDrop = useCallback(async (acceptedFiles) => {
-    if (!acceptedFiles || acceptedFiles.length === 0) return;
-
-    // PDF 파일만 필터링
-    const pdfFiles = acceptedFiles.filter(file => file.type === 'application/pdf');
-    const invalidFiles = acceptedFiles.filter(file => file.type !== 'application/pdf');
+  const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
+    console.log('📁 파일 드롭:', { acceptedFiles, rejectedFiles });
+    
+    // 지원되는 파일 형식 확인
+    const supportedFiles = acceptedFiles.filter(file => {
+      const type = file.type;
+      const extension = file.name.toLowerCase().split('.').pop();
+      
+      return type === 'application/pdf' || 
+             type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+             type === 'application/vnd.ms-excel' ||
+             type === 'text/plain' ||
+             extension === 'xlsx' ||
+             extension === 'xls' ||
+             extension === 'pdf' ||
+             extension === 'txt';
+    });
+    
+    const invalidFiles = acceptedFiles.filter(file => {
+      const type = file.type;
+      const extension = file.name.toLowerCase().split('.').pop();
+      
+      return !(type === 'application/pdf' || 
+               type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+               type === 'application/vnd.ms-excel' ||
+               type === 'text/plain' ||
+               extension === 'xlsx' ||
+               extension === 'xls' ||
+               extension === 'pdf' ||
+               extension === 'txt');
+    });
 
     if (invalidFiles.length > 0) {
-      alert(`⚠️ PDF 파일만 업로드 가능합니다.\n제외된 파일: ${invalidFiles.map(f => f.name).join(', ')}`);
+      alert(`⚠️ 지원하지 않는 파일 형식이 포함되어 있습니다.\n지원 형식: PDF, Excel(.xlsx, .xls), 텍스트(.txt)\n\n무시된 파일:\n${invalidFiles.map(f => f.name).join('\n')}`);
     }
 
-    if (pdfFiles.length === 0) {
-      setUploadError('PDF 파일을 선택해주세요.');
+    if (supportedFiles.length === 0) {
+      setUploadError('지원되는 파일을 선택해주세요. (PDF, Excel, 텍스트 파일만 가능)');
       return;
     }
 
     // 파일 크기 검증 (50MB per file)
-    const oversizedFiles = pdfFiles.filter(file => file.size > 50 * 1024 * 1024);
+    const oversizedFiles = supportedFiles.filter(file => file.size > 50 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       alert(`⚠️ 파일 크기는 50MB 이하여야 합니다.\n초과된 파일: ${oversizedFiles.map(f => f.name).join(', ')}`);
-      const validFiles = pdfFiles.filter(file => file.size <= 50 * 1024 * 1024);
+      const validFiles = supportedFiles.filter(file => file.size <= 50 * 1024 * 1024);
       if (validFiles.length === 0) return;
       setSelectedFiles(validFiles);
     } else {
-      setSelectedFiles(pdfFiles);
+      setSelectedFiles(supportedFiles);
     }
 
     // 파일별 메타데이터 초기화 (교수 학과 기본 카테고리로)
     const defaultCategory = getDepartmentCategories()[0]?.value || '국가고시';
     const initialMetadata = {};
-    pdfFiles.forEach(file => {
+    supportedFiles.forEach(file => {
       initialMetadata[file.name] = {
-        title: file.name.replace('.pdf', ''),
+        title: file.name.replace(/\.(pdf|xlsx?|txt)$/i, ''),
         category: defaultCategory
       };
     });
@@ -317,41 +347,82 @@ const RAGUpdate = () => {
     };
     
     try {
+      // 파일별 진행 메시지 초기화
+      selectedFiles.forEach(file => {
+        setUploadMessages(prev => ({
+          ...prev,
+          [file.name]: '📤 파일 업로드 준비 중...'
+        }));
+      });
+
       // 전체 파일에 대한 진행률 추적
       const handleUploadProgress = (percentCompleted) => {
-        // 실제 업로드는 전체의 40%까지만, 나머지 60%는 파싱 단계
         const uploadProgress = Math.min(percentCompleted * 0.4, 40);
         selectedFiles.forEach(file => {
           setUploadProgress(prev => ({
             ...prev,
             [file.name]: uploadProgress
           }));
+          
+          // 업로드 단계 메시지
+          if (uploadProgress < 10) {
+            setUploadMessages(prev => ({
+              ...prev,
+              [file.name]: '📤 파일 업로드 시작 중...'
+            }));
+          } else if (uploadProgress < 30) {
+            setUploadMessages(prev => ({
+              ...prev,
+              [file.name]: '📤 파일 업로드 진행 중...'
+            }));
+          } else {
+            setUploadMessages(prev => ({
+              ...prev,
+              [file.name]: '📤 파일 업로드 완료, 서버 전송 중...'
+            }));
+          }
         });
       };
 
-      // 파싱 시작 표시 (40% -> 95%)
+      // 파싱 시작 표시
       selectedFiles.forEach(file => {
         setUploadProgress(prev => ({
           ...prev,
           [file.name]: 40
         }));
+        setUploadMessages(prev => ({
+          ...prev,
+          [file.name]: '🔍 파일 형식 분석 중...'
+        }));
       });
 
-      // 파싱 진행률 시뮬레이션 (모든 파일에 대해 동기화)
+      // 파싱 진행률 및 메시지 시뮬레이션
+      const parsingStages = [
+        { progress: 50, message: '📋 파일 내용 읽는 중...' },
+        { progress: 60, message: '🤖 AI 분석 시작...' },
+        { progress: 70, message: '📝 문제 구조 파악 중...' },
+        { progress: 80, message: '🎯 선택지 정리 중...' },
+        { progress: 90, message: '✨ 최종 검증 중...' },
+        { progress: 95, message: '📋 데이터 정리 완료...' }
+      ];
+
+      let stageIndex = 0;
       const parsingInterval = setInterval(() => {
-        selectedFiles.forEach(file => {
-          setUploadProgress(prev => {
-            const currentProgress = prev[file.name] || 40;
-            if (currentProgress < 95) {
-              return {
-                ...prev,
-                [file.name]: Math.min(currentProgress + Math.random() * 3, 95)
-              };
-            }
-            return prev;
+        if (stageIndex < parsingStages.length) {
+          const stage = parsingStages[stageIndex];
+          selectedFiles.forEach(file => {
+            setUploadProgress(prev => ({
+              ...prev,
+              [file.name]: stage.progress
+            }));
+            setUploadMessages(prev => ({
+              ...prev,
+              [file.name]: stage.message
+            }));
           });
-        });
-      }, 1500);
+          stageIndex++;
+        }
+      }, 2000);
 
       // 통합 멀티파일 업로드 API 호출
       const result = await questionReviewApi.uploadPdfWithReview(
@@ -367,6 +438,10 @@ const RAGUpdate = () => {
         setUploadProgress(prev => ({
           ...prev,
           [file.name]: 100
+        }));
+        setUploadMessages(prev => ({
+          ...prev,
+          [file.name]: '✅ 업로드 및 파싱 완료!'
         }));
       });
       
@@ -398,6 +473,14 @@ const RAGUpdate = () => {
       
       // 파싱 진행률 시뮬레이션 중단
       clearInterval(parsingInterval);
+      
+      // 오류 메시지 설정
+      selectedFiles.forEach(file => {
+        setUploadMessages(prev => ({
+          ...prev,
+          [file.name]: '❌ 업로드 실패'
+        }));
+      });
       
       // 500 오류의 경우 부분적 성공으로 처리
       if (error.response?.status === 500) {
@@ -454,7 +537,10 @@ const RAGUpdate = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf']
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'text/plain': ['.txt']
     },
     multiple: true,
     disabled: uploadStatus === 'uploading'
@@ -465,6 +551,7 @@ const RAGUpdate = () => {
     setUploadResults([]);
     setUploadError('');
     setUploadProgress({});
+    setUploadMessages({});
     setSelectedFiles([]);
     setFileMetadata({});
     setCurrentUploadIndex(0);
@@ -789,28 +876,43 @@ const RAGUpdate = () => {
               <div className="flex items-center justify-center gap-4 mb-4">
                 <Upload className="h-12 w-12 text-blue-500" />
                 <Plus className="h-8 w-8 text-gray-400" />
-                <FileText className="h-12 w-12 text-green-500" />
+                <div className="flex items-center gap-2">
+                  <FileText className="h-12 w-12 text-red-500" title="PDF" />
+                  <div className="h-12 w-12 text-green-500 flex items-center justify-center text-2xl" title="Excel">📊</div>
+                  <div className="h-12 w-12 text-blue-500 flex items-center justify-center text-2xl" title="텍스트">📝</div>
+                </div>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {isDragActive ? 'PDF 파일들을 여기에 놓으세요!' : '여러 개의 PDF 파일을 드래그하거나 클릭하여 선택하세요'}
+                {isDragActive ? 'PDF, Excel, 텍스트 파일을 여기에 놓으세요!' : '여러 개의 PDF, Excel, 텍스트 파일을 드래그하거나 클릭하여 선택하세요'}
               </h3>
               <p className="text-gray-500 mb-4">
-                • 파일당 최대 50MB • PDF 형식만 지원 • 한 번에 여러 파일 업로드 가능
+                • 파일당 최대 50MB • PDF, Excel, 텍스트 형식만 지원 • 한 번에 여러 파일 업로드 가능
               </p>
               
               {/* 방식 1: 통합 업로드 안내 */}
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl">🚀</span>
-                  <h4 className="font-semibold text-green-800">방식 1: 통합 멀티업로드</h4>
-                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">추천</span>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  🚀 통합 멀티파일 업로드 (방식 1)
+                </h4>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>• <strong>여러 파일 한번에:</strong> 문제지와 정답지를 함께 업로드하면 자동으로 매칭</p>
+                  <p>• <strong>파일 형식:</strong> PDF, Excel(.xlsx, .xls), 텍스트(.txt) 파일 지원</p>
+                  <p>• <strong>자동 파싱:</strong> 파일 내용을 자동으로 분석하여 구조화된 데이터로 변환</p>
+                  <p>• <strong>22개 제한:</strong> 파일당 최대 22개 문제까지 처리 (시스템 정책)</p>
+                  <p>• <strong>즉시 검토:</strong> 업로드 후 바로 문제 검토 페이지로 이동</p>
                 </div>
-                <div className="text-sm text-green-700 space-y-1">
-                  <p><strong>✅ 한번에 업로드:</strong> 문제지와 정답지를 함께 드래그 앤 드롭</p>
-                  <p><strong>🔄 자동 매칭:</strong> AI가 같은 문제번호끼리 자동으로 매칭</p>
-                  <p><strong>⚡ 빠른 처리:</strong> 개별 업로드 대신 통합 처리로 시간 절약</p>
-                  <p><strong>🎯 정답 우선:</strong> 정답지 정보가 우선 적용되어 정확도 향상</p>
-                  <p><strong>📊 최대 처리:</strong> 통합 파일에서 최대 22개 문제까지 추출</p>
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                      <p><strong>✅ 지원 형식:</strong> PDF, Excel, 텍스트 파일</p>
+                      <p><strong>📏 파일 크기:</strong> 최대 50MB per file</p>
+                    </div>
+                    <div>
+                      <p><strong>🎯 매칭 방식:</strong> 파일명 자동 인식</p>
+                      <p><strong>⚡ 처리 속도:</strong> Excel &gt; 텍스트 &gt; PDF 순</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -818,7 +920,7 @@ const RAGUpdate = () => {
               <div className="mt-4 text-xs text-gray-500 bg-gray-50 rounded p-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
-                    <p><strong>✅ 지원 형식:</strong> PDF만 가능</p>
+                    <p><strong>✅ 지원 형식:</strong> PDF, Excel, 텍스트 파일만 가능</p>
                     <p><strong>📏 파일 크기:</strong> 최대 50MB per file</p>
                   </div>
                   <div>
@@ -842,29 +944,46 @@ const RAGUpdate = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <FileText className="h-4 w-4 text-blue-600" />
+                            {file.name.toLowerCase().endsWith('.pdf') ? (
+                              <FileText className={`h-4 w-4 ${
+                                uploadProgress[file.name] === 100 ? 'text-red-600' :
+                                uploadProgress[file.name] !== undefined ? 'text-red-600' :
+                                'text-gray-400'
+                              }`} />
+                            ) : file.name.toLowerCase().match(/\.(xlsx?|xls)$/i) ? (
+                              <div className={`h-4 w-4 ${
+                                uploadProgress[file.name] === 100 ? 'text-green-600' :
+                                uploadProgress[file.name] !== undefined ? 'text-green-600' :
+                                'text-gray-400'
+                              }`}>📊</div>
+                            ) : file.name.toLowerCase().endsWith('.txt') ? (
+                              <div className={`h-4 w-4 ${
+                                uploadProgress[file.name] === 100 ? 'text-blue-600' :
+                                uploadProgress[file.name] !== undefined ? 'text-blue-600' :
+                                'text-gray-400'
+                              }`}>📝</div>
+                            ) : (
+                              <FileText className={`h-4 w-4 ${
+                                uploadProgress[file.name] === 100 ? 'text-green-600' :
+                                uploadProgress[file.name] !== undefined ? 'text-blue-600' :
+                                'text-gray-400'
+                              }`} />
+                            )}
                             <span className="font-medium text-gray-900">{file.name}</span>
-                            <span className="text-sm text-gray-500">
-                              ({(file.size / 1024 / 1024).toFixed(1)} MB)
-                            </span>
+                          </div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            파일 크기: {(file.size / 1024 / 1024).toFixed(1)} MB
                           </div>
                           
-                          {/* 진행률 표시 */}
-                          {uploadProgress[file.name] !== undefined && (
-                            <div className="mb-3">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-sm text-gray-600">업로드 진행률</span>
-                                <span className="text-sm font-medium text-blue-600">
-                                  {uploadProgress[file.name]}%
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${uploadProgress[file.name]}%` }}
-                                />
-                              </div>
-                            </div>
+                          {/* 진행 상태 표시 */}
+                          {uploadMessages[file.name] && (
+                            <UploadProgressBar
+                              file={file}
+                              progress={uploadProgress[file.name] || 0}
+                              message={uploadMessages[file.name]}
+                              isCompleted={uploadProgress[file.name] === 100}
+                              className="mb-3"
+                            />
                           )}
                         </div>
                         
@@ -989,11 +1108,31 @@ const RAGUpdate = () => {
                       'bg-gray-50 border border-gray-200'
                     }`}>
                       <div className="flex items-center gap-2">
-                        <FileText className={`h-4 w-4 ${
-                          isCompleted ? 'text-green-600' :
-                          isProcessing ? 'text-blue-600' :
-                          'text-gray-400'
-                        }`} />
+                        {file.name.toLowerCase().endsWith('.pdf') ? (
+                          <FileText className={`h-4 w-4 ${
+                            isCompleted ? 'text-red-600' :
+                            isProcessing ? 'text-red-600' :
+                            'text-gray-400'
+                          }`} />
+                        ) : file.name.toLowerCase().match(/\.(xlsx?|xls)$/i) ? (
+                          <div className={`h-4 w-4 ${
+                            isCompleted ? 'text-green-600' :
+                            isProcessing ? 'text-green-600' :
+                            'text-gray-400'
+                          }`}>📊</div>
+                        ) : file.name.toLowerCase().endsWith('.txt') ? (
+                          <div className={`h-4 w-4 ${
+                            isCompleted ? 'text-blue-600' :
+                            isProcessing ? 'text-blue-600' :
+                            'text-gray-400'
+                          }`}>📝</div>
+                        ) : (
+                          <FileText className={`h-4 w-4 ${
+                            isCompleted ? 'text-green-600' :
+                            isProcessing ? 'text-blue-600' :
+                            'text-gray-400'
+                          }`} />
+                        )}
                         <span className={`text-sm font-medium ${
                           isCompleted ? 'text-green-800' :
                           isProcessing ? 'text-blue-800' :
@@ -1011,17 +1150,16 @@ const RAGUpdate = () => {
                           </>
                         )}
                                                  {isProcessing && (
-                           <>
-                             <div className="w-16 bg-gray-200 rounded-full h-2">
-                               <div 
-                                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                 style={{ width: `${progress}%` }}
-                               />
-                             </div>
-                             <span className="text-xs text-blue-700 font-medium">
-                               {progress < 30 ? '업로드' : progress < 95 ? '파싱' : '완료'} {Math.round(progress)}%
-                             </span>
-                           </>
+                           <div className="w-20">
+                             <UploadProgressBar
+                               file={file}
+                               progress={progress}
+                               message={uploadMessages[file.name] || '처리 중...'}
+                               isCompleted={false}
+                               showPercentage={false}
+                               className="p-1 text-xs"
+                             />
+                           </div>
                          )}
                         {isPending && (
                           <span className="text-xs text-gray-500">대기 중</span>
@@ -1182,6 +1320,27 @@ const RAGUpdate = () => {
               </div>
             )}
 
+            {/* 주요 액션 버튼 - 문제 검토하기 강조 */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-6 mb-6">
+              <div className="text-center mb-4">
+                <h4 className="text-lg font-semibold text-green-800 mb-2">📋 다음 단계</h4>
+                <p className="text-sm text-green-700">
+                  업로드된 문제들을 검토하고 승인하여 학생들에게 제공하세요
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => window.location.href = '/professor/question-review'}
+                  className="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-4 rounded-xl hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 shadow-lg flex items-center gap-3 text-lg font-semibold"
+                >
+                  <Eye className="h-6 w-6" />
+                  📋 문제 검토 페이지로 이동
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* 부가 액션 버튼들 */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => window.location.href = '/professor/problems'}
@@ -1190,13 +1349,6 @@ const RAGUpdate = () => {
                 <Brain className="h-4 w-4" />
                 RAG 문제 생성하기
                 <ArrowRight className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => window.location.href = '/professor/question-review'}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-              >
-                <Eye className="h-4 w-4" />
-                문제 검토하기
               </button>
               <button
                 onClick={resetUpload}

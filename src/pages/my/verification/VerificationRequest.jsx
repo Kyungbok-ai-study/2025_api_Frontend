@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import apiClient from '../../../services/api';
+import FileUploadDropzone from '../../../components/FileUploadDropzone';
 
 const VerificationRequest = ({ user, onClose, onVerificationRequest }) => {
   const [formData, setFormData] = useState({
@@ -7,43 +8,10 @@ const VerificationRequest = ({ user, onClose, onVerificationRequest }) => {
     reason: '',
     documents: []
   });
-  const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-
-  const validateFile = (file) => {
-    if (file.size > maxFileSize) {
-      return '파일 크기는 10MB를 초과할 수 없습니다.';
-    }
-    if (!allowedTypes.includes(file.type)) {
-      return '지원하지 않는 파일 형식입니다. (JPG, PNG, PDF만 가능)';
-    }
-    return null;
-  };
-
-  const handleFileUpload = (files) => {
-    const newFiles = Array.from(files);
-    const validFiles = [];
-    const fileErrors = [];
-
-    newFiles.forEach((file, index) => {
-      const error = validateFile(file);
-      if (error) {
-        fileErrors.push(`${file.name}: ${error}`);
-      } else {
-        validFiles.push({
-          id: Date.now() + index,
-          file: file,
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
-      }
-    });
-
+  const handleFilesSelected = (validFiles, fileErrors) => {
     if (fileErrors.length > 0) {
       setErrors(prev => ({ ...prev, files: fileErrors }));
     } else {
@@ -51,32 +19,22 @@ const VerificationRequest = ({ user, onClose, onVerificationRequest }) => {
     }
 
     if (validFiles.length > 0) {
+      const newFiles = validFiles.map((file, index) => ({
+        id: Date.now() + index,
+        file: file,
+        name: file.name,
+        size: file.size,
+        type: file.type
+      }));
+
       setFormData(prev => ({
         ...prev,
-        documents: [...prev.documents, ...validFiles]
+        documents: [...prev.documents, ...newFiles]
       }));
     }
   };
 
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileUpload(e.dataTransfer.files);
-    }
-  };
 
   const removeFile = (fileId) => {
     setFormData(prev => ({
@@ -322,39 +280,23 @@ const VerificationRequest = ({ user, onClose, onVerificationRequest }) => {
               증빙 서류 업로드 <span className="text-red-500">*</span>
             </label>
             
-            <div
-              className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-                dragActive 
-                  ? 'border-green-400 bg-green-50' 
-                  : errors.documents 
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
+            <FileUploadDropzone
+              onFilesSelected={handleFilesSelected}
+              acceptedFormats={['.jpg', '.jpeg', '.png', '.pdf']}
+              maxFileSize={10 * 1024 * 1024} // 10MB
+              multiple={true}
+              disabled={loading}
+              className={errors.documents ? 'border-red-300' : ''}
             >
               <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <p className="text-gray-600 mb-2">파일을 드래그하여 업로드하거나</p>
-              <input
-                type="file"
-                multiple
-                accept=".jpg,.jpeg,.png,.pdf"
-                onChange={(e) => handleFileUpload(e.target.files)}
-                className="hidden"
-                id="file-upload"
-              />
-              <label
-                htmlFor="file-upload"
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 cursor-pointer transition-colors inline-block"
-              >
+              <p className="text-gray-600 mb-2">파일을 드래그하여 업로드하거나 클릭하세요</p>
+              <div className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 cursor-pointer transition-colors inline-block">
                 파일 선택
-              </label>
+              </div>
               <p className="text-xs text-gray-500 mt-2">JPG, PNG, PDF 파일만 가능 (최대 10MB)</p>
-            </div>
+            </FileUploadDropzone>
 
             {errors.files && (
               <div className="mt-2 text-red-600 text-sm">

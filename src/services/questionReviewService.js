@@ -5,11 +5,12 @@ import apiClient, { fileUploadApiClient } from './api.js';
 
 export const questionReviewApi = {
   /**
-   * PDF 파일 멀티업로드 및 파싱 (2차 승인 프로세스)
+   * 멀티파일 업로드 및 파싱 (2차 승인 프로세스)
    * 문제지와 정답지를 함께 업로드하여 통합 파싱
+   * 지원 형식: PDF, Excel(.xlsx, .xls), 텍스트(.txt)
    * 타임아웃: 5분 (파싱 시간 고려)
    */
-  uploadPdfWithReview: (files, onUploadProgress, title = null, category = null) => {
+  uploadFilesWithReview: (files, onUploadProgress, title = null, category = null) => {
     const formData = new FormData();
     
     // 파일이 배열이 아닌 경우 배열로 변환
@@ -39,6 +40,11 @@ export const questionReviewApi = {
     
     return fileUploadApiClient.post('/professor/upload/pdf-with-review', formData, config)
       .then(response => response.data);
+  },
+
+  // 하위 호환성을 위한 별칭
+  uploadPdfWithReview: function(files, onUploadProgress, title = null, category = null) {
+    return this.uploadFilesWithReview(files, onUploadProgress, title, category);
   },
 
   /**

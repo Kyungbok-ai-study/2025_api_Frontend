@@ -32,6 +32,10 @@ import ProblemGeneration from "./pages/professor/ProblemManagement.jsx";
 import MatchingTest from "./pages/professor/MatchingTest.jsx";
 import StudentAnalysis from "./pages/professor/StudentAnalysis.jsx";
 import DiagnosisAnalysisResult from './pages/student/diagnostic/DiagnosisAnalysisResult';
+// 통합 진단테스트 컴포넌트
+import UniversalDiagnosticTest from './pages/student/diagnostic/UniversalDiagnosticTest';
+import UniversalDiagnosticTestRunner from './components/UniversalDiagnosticTestRunner';
+import UniversalDiagnosticTestResult from './components/UniversalDiagnosticTestResult';
 
 import "./App.css";
 
@@ -58,6 +62,11 @@ const App = () => {
         <Route path="/student/diagnosis/:subject" element={<DiagnosticTest />} />
         <Route path="/student/diagnosis" element={<ProtectedRoute role="student"><DiagnosticTest /></ProtectedRoute>} />
         <Route path="/student/diagnosis/analysis/:department" element={<ProtectedRoute role="student"><DiagnosisAnalysisResult /></ProtectedRoute>} />
+        {/* 통합 진단테스트 라우트 (전체 학과 지원) */}
+        <Route path="/student/universal-diagnosis" element={<ProtectedRoute role="student"><UniversalDiagnosticTest /></ProtectedRoute>} />
+        <Route path="/student/universal-diagnosis/test/:department" element={<ProtectedRoute role="student"><UniversalDiagnosticTestRunner /></ProtectedRoute>} />
+        <Route path="/student/universal-diagnosis/result/:resultId" element={<ProtectedRoute role="student"><UniversalDiagnosticTestResult /></ProtectedRoute>} />
+        <Route path="/universal-diagnosis" element={<ProtectedRoute><UniversalDiagnosticTest /></ProtectedRoute>} />
         <Route path="/student/diagnostic/medical" element={<ProtectedRoute><MedicalDiagnosisSelector /></ProtectedRoute>} />
         <Route path="/diagnosis/test/:department/:round" element={<ProtectedRoute><MedicalDiagnosisTest /></ProtectedRoute>} />
         <Route path="/student/dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />

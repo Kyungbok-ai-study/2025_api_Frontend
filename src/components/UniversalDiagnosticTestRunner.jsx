@@ -1,30 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Box, 
-  Typography, 
-  Card, 
-  CardContent, 
-  Button, 
-  Radio, 
-  RadioGroup, 
-  FormControlLabel, 
-  FormControl, 
-  LinearProgress,
-  Alert,
-  Chip,
-  Divider,
-  Paper,
-  Grid
-} from '@mui/material';
-import { 
   Timer, 
   CheckCircle, 
-  Warning, 
-  School,
-  Assignment,
-  TrendingUp
-} from '@mui/icons-material';
+  AlertTriangle, 
+  GraduationCap,
+  FileText,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
 
 const UniversalDiagnosticTestRunner = () => {
   const { department } = useParams();
@@ -197,203 +182,196 @@ const UniversalDiagnosticTestRunner = () => {
 
   if (!testData) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <Typography>테스트를 불러오는 중...</Typography>
-      </Box>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">테스트 로딩 중...</p>
+        </div>
+      </div>
     );
   }
 
   const currentQuestion = testData.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === testData.questions.length - 1;
-  const answeredCount = getAnsweredCount();
-  const totalQuestions = testData.questions.length;
+  const currentAnswer = answers[currentQuestion.id];
 
   return (
-    <Box sx={{ maxWidth: 1000, mx: 'auto', p: 3 }}>
+    <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
-      <Paper sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-        <Grid container alignItems="center" spacing={2}>
-          <Grid item>
-            <School sx={{ fontSize: 40 }} />
-          </Grid>
-          <Grid item xs>
-            <Typography variant="h4" fontWeight="bold">
-              {testData.test_info?.department_name} 진단테스트
-            </Typography>
-            <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-              {testData.test_info?.description}
-            </Typography>
-          </Grid>
-          <Grid item>
-            <Box textAlign="center">
-              <Typography variant="h6" fontWeight="bold">
-                <Timer sx={{ mr: 1, verticalAlign: 'middle' }} />
-                {formatTime(timeRemaining)}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                남은 시간
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <GraduationCap className="h-6 w-6 text-indigo-600" />
+              <h1 className="text-xl font-bold text-gray-900">
+                {testData.test_info?.department_name} 진단테스트
+              </h1>
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              {/* 진행률 */}
+              <div className="flex items-center space-x-2">
+                <FileText className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  {currentQuestionIndex + 1} / {testData.questions.length}
+                </span>
+              </div>
+              
+              {/* 답안 완성도 */}
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-gray-600">
+                  {getAnsweredCount()} / {testData.questions.length} 완료
+                </span>
+              </div>
+              
+              {/* 타이머 */}
+              <div className={`flex items-center space-x-2 px-3 py-1 rounded-lg ${
+                timeRemaining < 300 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+              }`}>
+                <Timer className="h-4 w-4" />
+                <span className="font-mono text-sm font-medium">
+                  {formatTime(timeRemaining)}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* 진행률 바 */}
+          <div className="mt-4">
+            <div className="bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${getProgress()}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* 진행 상태 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              문제 {currentQuestionIndex + 1} / {totalQuestions}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip 
-                icon={<Assignment />} 
-                label={`답변완료: ${answeredCount}/${totalQuestions}`}
-                color={answeredCount === totalQuestions ? "success" : "default"}
-              />
-              <Chip 
-                icon={<TrendingUp />} 
-                label={`진행률: ${Math.round(getProgress())}%`}
-                color="primary"
-              />
-            </Box>
-          </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={getProgress()} 
-            sx={{ height: 8, borderRadius: 4 }}
-          />
-        </CardContent>
-      </Card>
-
-      {/* 시간 경고 */}
-      {timeRemaining < 300 && ( // 5분 미만
-        <Alert severity="warning" sx={{ mb: 3 }}>
-          <Warning sx={{ mr: 1 }} />
-          시간이 얼마 남지 않았습니다! ({formatTime(timeRemaining)})
-        </Alert>
-      )}
-
-      {/* 문제 카드 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 4 }}>
-          <Box sx={{ mb: 3 }}>
-            <Chip 
-              label={`${currentQuestion.difficulty} 난이도`}
-              color={
-                currentQuestion.difficulty === '상' ? 'error' :
-                currentQuestion.difficulty === '중' ? 'warning' : 'success'
-              }
-              sx={{ mb: 2 }}
-            />
-            <Typography variant="h6" sx={{ mb: 2, lineHeight: 1.6 }}>
+      {/* 메인 컨텐트 */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-sm border p-8">
+          {/* 문제 */}
+          <div className="mb-8">
+            <div className="flex items-start space-x-4 mb-6">
+              <div className="bg-indigo-100 text-indigo-600 rounded-full px-3 py-1 text-sm font-semibold">
+                문제 {currentQuestionIndex + 1}
+              </div>
+              {currentQuestion.difficulty && (
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  currentQuestion.difficulty === 'hard' 
+                    ? 'bg-red-100 text-red-600' 
+                    : currentQuestion.difficulty === 'medium'
+                    ? 'bg-yellow-100 text-yellow-600'
+                    : 'bg-green-100 text-green-600'
+                }`}>
+                  {currentQuestion.difficulty === 'hard' ? '어려움' : 
+                   currentQuestion.difficulty === 'medium' ? '보통' : '쉬움'}
+                </span>
+              )}
+            </div>
+            
+            <h2 className="text-lg font-semibold text-gray-900 leading-relaxed">
               {currentQuestion.question}
-            </Typography>
-          </Box>
+            </h2>
+          </div>
 
-          <Divider sx={{ my: 3 }} />
+          {/* 선택지 */}
+          <div className="space-y-3 mb-8">
+            {Object.entries(currentQuestion.options).map(([key, value]) => (
+              <label 
+                key={key}
+                className={`block p-4 border rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                  currentAnswer === key 
+                    ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' 
+                    : 'border-gray-200'
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="radio"
+                    name={`question_${currentQuestion.id}`}
+                    value={key}
+                    checked={currentAnswer === key}
+                    onChange={() => handleAnswerChange(currentQuestion.id, key)}
+                    className="mt-1 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-gray-700">{key}.</span>
+                      <span className="text-gray-900">{value}</span>
+                    </div>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
 
-          <FormControl component="fieldset" sx={{ width: '100%' }}>
-            <RadioGroup
-              value={answers[currentQuestion.id] || ''}
-              onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+          {/* 키보드 힌트 */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-8">
+            <p className="text-sm text-gray-600">
+              💡 <strong>키보드 단축키:</strong> 숫자 키(1-5)로 답안 선택, Enter로 다음 문제
+            </p>
+          </div>
+
+          {/* 네비게이션 버튼 */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handlePreviousQuestion}
+              disabled={currentQuestionIndex === 0}
+              className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {Object.entries(currentQuestion.options).map(([key, option]) => (
-                <FormControlLabel
-                  key={key}
-                  value={key}
-                  control={<Radio />}
-                  label={
-                    <Typography sx={{ fontSize: '1.1rem', py: 0.5 }}>
-                      {key}. {option}
-                    </Typography>
-                  }
-                  sx={{ 
-                    mb: 1, 
-                    p: 1, 
-                    borderRadius: 1,
-                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.04)' },
-                    ...(answers[currentQuestion.id] === key && {
-                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                      border: '1px solid rgba(25, 118, 210, 0.3)'
-                    })
-                  }}
-                />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        </CardContent>
-      </Card>
+              <ChevronLeft className="h-4 w-4" />
+              <span>이전 문제</span>
+            </button>
 
-      {/* 네비게이션 버튼 */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Button
-          variant="outlined"
-          onClick={handlePreviousQuestion}
-          disabled={currentQuestionIndex === 0}
-          sx={{ minWidth: 120 }}
-        >
-          이전 문제
-        </Button>
+            <div className="flex items-center space-x-4">
+              {!isLastQuestion ? (
+                <button
+                  onClick={handleNextQuestion}
+                  className="flex items-center space-x-2 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <span>다음 문제</span>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmitTest}
+                  disabled={isSubmitting}
+                  className="flex items-center space-x-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>제출 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      <span>테스트 완료</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {/* 문제 번호 네비게이션 */}
-          {testData.questions.map((_, index) => (
-            <Button
-              key={index}
-              variant={index === currentQuestionIndex ? "contained" : "outlined"}
-              size="small"
-              onClick={() => setCurrentQuestionIndex(index)}
-              sx={{ 
-                minWidth: 40, 
-                height: 40,
-                ...(answers[testData.questions[index].id] && index !== currentQuestionIndex && {
-                  backgroundColor: 'success.light',
-                  color: 'white',
-                  '&:hover': { backgroundColor: 'success.main' }
-                })
-              }}
-            >
-              {index + 1}
-            </Button>
-          ))}
-        </Box>
-
-        {isLastQuestion ? (
-          <Button
-            variant="contained"
-            color="success"
-            onClick={handleSubmitTest}
-            disabled={isSubmitting}
-            sx={{ minWidth: 120 }}
-            startIcon={<CheckCircle />}
-          >
-            {isSubmitting ? '제출 중...' : '테스트 완료'}
-          </Button>
-        ) : (
-          <Button
-            variant="contained"
-            onClick={handleNextQuestion}
-            sx={{ minWidth: 120 }}
-          >
-            다음 문제
-          </Button>
+        {/* 하단 경고 */}
+        {timeRemaining < 300 && (
+          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              <p className="text-red-600">
+                <strong>시간이 얼마 남지 않았습니다!</strong> 
+                남은 시간: <span className="font-mono">{formatTime(timeRemaining)}</span>
+              </p>
+            </div>
+          </div>
         )}
-      </Box>
-
-      {/* 키보드 사용 안내 */}
-      <Alert severity="info" sx={{ mt: 3 }}>
-        💡 <strong>키보드 단축키:</strong> 숫자키 1~5로 답안 선택, Enter키로 다음 문제 이동
-      </Alert>
-
-      {/* 미답변 문제 경고 */}
-      {answeredCount < totalQuestions && (
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          아직 답변하지 않은 문제가 {totalQuestions - answeredCount}개 있습니다. 
-          위의 번호 버튼을 클릭하여 해당 문제로 이동할 수 있습니다.
-        </Alert>
-      )}
-    </Box>
+      </div>
+    </div>
   );
 };
 

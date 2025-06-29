@@ -1,8 +1,24 @@
 import axios from 'axios';
 
+// API 기본 URL 설정 (환경별 자동 감지)
+const getApiBaseUrl = (): string => {
+  // 프로덕션 환경에서는 환경변수 사용
+  if ((import.meta as any).env?.VITE_API_BASE_URL) {
+    return (import.meta as any).env.VITE_API_BASE_URL;
+  }
+  
+  // 개발 환경 자동 감지
+  if ((import.meta as any).env?.DEV) {
+    return 'http://localhost:8000';
+  }
+  
+  // 프로덕션 기본값 (실제 배포 후 수정 필요)
+  return '/api';
+};
+
 // API 클라이언트 설정
 const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -28,6 +44,13 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // 회원가입 페이지에서는 자동 리다이렉트 하지 않음
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/register')) {
+        console.log('회원가입 페이지에서 401 에러 - 리다이렉트 안 함');
+        return Promise.reject(error);
+      }
+      
       localStorage.removeItem('token');
       window.location.href = '/login';
     }

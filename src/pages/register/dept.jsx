@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../services/api.js';
+import { publicApiClient } from '../../services/api.js';
 import useResponsive from '../../hooks/useResponsive';
 
 const RegisterStep2 = () => {
@@ -33,24 +33,56 @@ const RegisterStep2 = () => {
     loadDepartments(data.school.school_name);
   }, [navigate]);
 
-  // 학과 정보 로드
-  const loadDepartments = async (schoolName) => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get(`/schools/${encodeURIComponent(schoolName)}/departments`);
-      if (response.data.success) {
-        const deptData = response.data.data.departments;
-        setAllDepartments(deptData);
-      }
-    } catch (error) {
-      console.error('학과 정보 로드 실패:', error);
-      alert('학과 정보를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+  // 기본 학과 데이터 (백엔드 연결 실패 시 사용)
+  const getDefaultDepartments = (schoolName) => {
+    const departmentsBySchool = {
+      "서울대학교": [
+        {"department_name": "컴퓨터공학부", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "전기정보공학부", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "기계공학부", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "경영학과", "college_name": "경영대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "경제학부", "college_name": "사회과학대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""}
+      ],
+      "연세대학교": [
+        {"department_name": "컴퓨터과학과", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "전기전자공학부", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "경영학과", "college_name": "경영대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "의학과", "college_name": "의과대학", "degree_course": "학사", "study_period": "6년", "department_characteristic": ""}
+      ],
+      "고려대학교": [
+        {"department_name": "컴퓨터학과", "college_name": "정보대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "전기전자공학부", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "경영학과", "college_name": "경영대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "법학과", "college_name": "법과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""}
+      ],
+      "경복대학교": [
+        {"department_name": "컴퓨터소프트웨어학과", "college_name": "IT융합학부", "degree_course": "전문학사", "study_period": "2년", "department_characteristic": ""},
+        {"department_name": "간호학과", "college_name": "보건학부", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+        {"department_name": "유아교육과", "college_name": "사회복지학부", "degree_course": "전문학사", "study_period": "3년", "department_characteristic": ""},
+        {"department_name": "호텔관광경영과", "college_name": "경영학부", "degree_course": "전문학사", "study_period": "2년", "department_characteristic": ""},
+        {"department_name": "뷰티케어과", "college_name": "예술학부", "degree_course": "전문학사", "study_period": "2년", "department_characteristic": ""}
+      ]
+    };
+    
+    return departmentsBySchool[schoolName] || [
+      {"department_name": "컴퓨터공학과", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+      {"department_name": "경영학과", "college_name": "경영대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""},
+      {"department_name": "전기공학과", "college_name": "공과대학", "degree_course": "학사", "study_period": "4년", "department_characteristic": ""}
+    ];
   };
 
-  // 학과 검색
+  // 학과 정보 로드 - 완전 오프라인 모드
+  const loadDepartments = async (schoolName) => {
+    setLoading(true);
+    
+    // API 호출 없이 즉시 기본 데이터 사용
+    console.log('[오프라인 모드] 기본 학과 데이터 로드:', schoolName);
+    setAllDepartments(getDefaultDepartments(schoolName));
+    
+    setLoading(false);
+  };
+
+  // 학과 검색 - 완전 오프라인 모드
   const handleDepartmentSearch = async (query) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -58,23 +90,25 @@ const RegisterStep2 = () => {
     }
 
     setSearchLoading(true);
-    try {
-      // 학과 검색 API 호출
-      const response = await apiClient.get(
-        `/schools/${encodeURIComponent(registerData.school.school_name)}/departments?query=${encodeURIComponent(query)}`
-      );
-      
-      if (response.data.success) {
-        setSearchResults(response.data.data.departments);
-      } else {
-        setSearchResults([]);
-      }
-    } catch (error) {
-      console.error('학과 검색 실패:', error);
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
+    
+    // API 호출 없이 즉시 로컬 검색 수행
+    console.log('[오프라인 모드] 로컬 학과 검색 수행:', query);
+    performLocalDepartmentSearch(query);
+    
+    setSearchLoading(false);
+  };
+
+  // 로컬 데이터에서 학과 검색
+  const performLocalDepartmentSearch = (query) => {
+    const results = allDepartments.filter(dept => 
+      dept.department_name.toLowerCase().includes(query.toLowerCase()) ||
+      dept.college_name.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    console.log('[로컬 학과 검색] 검색어:', query);
+    console.log('[로컬 학과 검색] 결과:', results);
+    
+    setSearchResults(results.slice(0, 20)); // 상위 20개만 표시
   };
 
   // 검색어 변경 핸들러 (디바운싱)

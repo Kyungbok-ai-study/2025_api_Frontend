@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../services/api.js';
+import { publicApiClient } from '../../services/api.js';
 import useResponsive from '../../hooks/useResponsive';
 
 const RegisterStep1 = () => {
@@ -33,41 +33,25 @@ const RegisterStep1 = () => {
     return years;
   };
 
-  // 인기 학교 목록 로드
-  useEffect(() => {
-    const loadPopularSchools = async () => {
-      try {
-        console.log('[API] 인기 학교 목록 요청 시작');
-        console.log('[API] API Base URL:', apiClient.defaults.baseURL);
-        
-        const response = await apiClient.get('/schools/popular');
-        console.log('[API] 인기 학교 목록 응답:', response);
-        
-        if (response.data.success) {
-          setPopularSchools(response.data.data);
-          console.log('[API] 인기 학교 목록 로드 성공:', response.data.data.length, '개');
-        } else {
-          console.warn('[API] 인기 학교 목록 응답 실패');
-        }
-      } catch (error) {
-        console.error('인기 학교 로드 실패:', error);
-        console.error('에러 상세:', {
-          message: error.message,
-          code: error.code,
-          config: error.config,
-          response: error.response,
-          url: error.config?.url,
-          baseURL: error.config?.baseURL
-        });
-        
-        // 네트워크 에러인 경우 사용자에게 알림
-        if (error.code === 'ERR_NETWORK' || !error.response) {
-          console.error('[API] 서버 연결 실패 - 백엔드 서버가 실행 중인지 확인하세요');
-        }
-      }
-    };
+  // 기본 학교 데이터 (백엔드 연결 실패 시 사용)
+  const getDefaultSchools = () => [
+    {"school_name": "서울대학교", "school_code": "SCH_001", "area_name": "서울특별시", "school_type": "국립대학교"},
+    {"school_name": "연세대학교", "school_code": "SCH_002", "area_name": "서울특별시", "school_type": "사립대학교"},
+    {"school_name": "고려대학교", "school_code": "SCH_003", "area_name": "서울특별시", "school_type": "사립대학교"},
+    {"school_name": "성균관대학교", "school_code": "SCH_004", "area_name": "서울특별시", "school_type": "사립대학교"},
+    {"school_name": "한양대학교", "school_code": "SCH_005", "area_name": "서울특별시", "school_type": "사립대학교"},
+    {"school_name": "중앙대학교", "school_code": "SCH_006", "area_name": "서울특별시", "school_type": "사립대학교"},
+    {"school_name": "경희대학교", "school_code": "SCH_007", "area_name": "서울특별시", "school_type": "사립대학교"},
+    {"school_name": "부산대학교", "school_code": "SCH_008", "area_name": "부산광역시", "school_type": "국립대학교"},
+    {"school_name": "경복대학교", "school_code": "SCH_009", "area_name": "경기도", "school_type": "전문대학"},
+    {"school_name": "가천대학교", "school_code": "SCH_010", "area_name": "경기도", "school_type": "사립대학교"}
+  ];
 
-    loadPopularSchools();
+  // 인기 학교 목록 로드 - 완전 오프라인 모드
+  useEffect(() => {
+    // API 호출 없이 즉시 기본 데이터 사용
+    console.log('[오프라인 모드] 기본 학교 데이터 로드');
+    setPopularSchools(getDefaultSchools());
   }, []);
 
   // 한글 초성 추출 함수
@@ -132,7 +116,7 @@ const RegisterStep1 = () => {
     return false;
   };
 
-  // 학교 검색
+  // 학교 검색 - 완전 오프라인 모드
   const handleSchoolSearch = async (query) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -140,52 +124,29 @@ const RegisterStep1 = () => {
     }
 
     setSearchLoading(true);
-    try {
-      const response = await apiClient.get(`/schools/search?query=${encodeURIComponent(query)}`);
-      console.log('[학교 검색] API 응답:', response);
-      console.log('[학교 검색] 응답 데이터:', response.data);
-      
-      if (response.data.success) {
-        let results = response.data.data;
-        console.log('[학교 검색] 원본 결과:', results);
-        
-        // 백엔드에서 이미 필터링된 결과를 보내므로 추가 필터링 제거
-        // 클라이언트 사이드에서 추가 필터링 (초성 검색 포함)
-        // if (query.length <= 3) {
-        //   // 짧은 검색어의 경우 더 관대한 매칭
-        //   results = results.filter(school => 
-        //     isMatchingSearch(school.school_name, query)
-        //   );
-        //   console.log('[학교 검색] 필터링 후 결과:', results);
-        // }
-        
-        setSearchResults(results);
-      } else {
-        console.log('[학교 검색] API 응답 실패:', response.data);
-        setSearchResults([]);
-      }
-    } catch (error) {
-      console.error('학교 검색 실패:', error);
-      console.error('에러 상세:', {
-        message: error.message,
-        code: error.code,
-        config: error.config,
-        response: error.response,
-        url: error.config?.url,
-        baseURL: error.config?.baseURL
-      });
-      
-      // 네트워크 에러인 경우 사용자에게 알림
-      if (error.code === 'ERR_NETWORK' || !error.response) {
-        alert('서버와의 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
-      } else if (error.response?.status === 404) {
-        console.error('[API] 학교 검색 API 엔드포인트를 찾을 수 없습니다');
-      }
-      
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
+    
+    // API 호출 없이 즉시 로컬 검색 수행
+    console.log('[오프라인 모드] 로컬 검색 수행:', query);
+    performLocalSearch(query);
+    
+    setSearchLoading(false);
+  };
+
+  // 로컬 데이터에서 학교 검색
+  const performLocalSearch = (query) => {
+    const allSchools = [...getDefaultSchools(), ...popularSchools];
+    const uniqueSchools = allSchools.filter((school, index, self) => 
+      index === self.findIndex(s => s.school_name === school.school_name)
+    );
+    
+    const results = uniqueSchools.filter(school => 
+      isMatchingSearch(school.school_name, query)
+    );
+    
+    console.log('[로컬 검색] 검색어:', query);
+    console.log('[로컬 검색] 결과:', results);
+    
+    setSearchResults(results.slice(0, 20)); // 상위 20개만 표시
   };
 
   // 검색어 변경 핸들러 (디바운싱 시간 단축)

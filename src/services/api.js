@@ -1,8 +1,24 @@
 import axios from 'axios';
 
+// API 기본 URL 설정 (환경별 자동 감지)
+const getApiBaseUrl = () => {
+  // 프로덕션 환경에서는 환경변수 사용
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // 개발 환경 자동 감지
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8000';
+  }
+  
+  // 프로덕션에서 직접 백엔드 URL 사용
+  return 'https://2025backend-f1zll9bfq-gabrieljung0727s-projects.vercel.app';
+};
+
 // 일반 API 클라이언트 설정
 const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -11,10 +27,19 @@ const apiClient = axios.create({
 
 // 파일 업로드용 API 클라이언트 (타임아웃 연장)
 const fileUploadApiClient = axios.create({
-  baseURL: "/api",
+  baseURL: getApiBaseUrl(),
   timeout: 300000, // 5분 (300초)
   headers: {
     'Content-Type': 'multipart/form-data',
+  },
+});
+
+// 공개 API 클라이언트 (회원가입, 학교 검색 등 인증이 필요 없는 API용)
+const publicApiClient = axios.create({
+  baseURL: getApiBaseUrl(),
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
   },
 });
 
@@ -40,6 +65,13 @@ const setupResponseInterceptor = (client) => {
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
+        // 회원가입 페이지에서는 자동 리다이렉트 하지 않음
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/register')) {
+          console.log('회원가입 페이지에서 401 에러 - 리다이렉트 안 함');
+          return Promise.reject(error);
+        }
+        
         localStorage.removeItem('token');
         window.location.href = '/login';
       }
@@ -48,11 +80,14 @@ const setupResponseInterceptor = (client) => {
   );
 };
 
-// 두 클라이언트에 인터셉터 적용
+// 인증이 필요한 클라이언트에만 인터셉터 적용
 setupRequestInterceptor(apiClient);
 setupResponseInterceptor(apiClient);
 setupRequestInterceptor(fileUploadApiClient);
 setupResponseInterceptor(fileUploadApiClient);
+
+// 공개 API 클라이언트에는 응답 인터셉터만 적용 (인증 토큰은 제외)
+setupResponseInterceptor(publicApiClient);
 
 // API 함수들
 export const campusOnApi = {
@@ -160,4 +195,4 @@ export const campusOnApi = {
 };
 
 export default apiClient;
-export { fileUploadApiClient }; 
+export { fileUploadApiClient, publicApiClient }; 
